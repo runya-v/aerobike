@@ -1,173 +1,15 @@
-var UTILS = {};
+/*!
+ * \brief  Основной модуль игровой логики "Летающий мотоцикл".
+ * \author Rostislav Velichko. e: rostislav.vel@gmail.com
+ * \date   11.20.2015
+ */
 
-UTILS.CreateStyle = function(inner_html) {
-    var style = document.createElement('style');
-    style.innerHTML = inner_html;
-    document.head.appendChild(style);
-    return style;
+var AEROBIKE = {};
+
+AEROBIKE.Start = function() {
+
 };
 
-UTILS.CreateContainer = function(container_name) {
-    var container = document.createElement('div');
-    container.id = container_name;
-    document.body.appendChild(container);
-    return container;
-};
-
-
-UTILS.Display = function(element) {
-    var _element = element;
-
-    getRealDisplay = function(elem) {
-        var computedStyle;
-        if (elem.currentStyle) {
-            return elem.currentStyle.display;
-        } else if (window.getComputedStyle) {
-            computedStyle = window.getComputedStyle(elem, null);
-            return computedStyle.getPropertyValue('display');
-        }
-    };
-
-    this.hide = function() {
-        _element.style.display = "none";
-    };
-
-    var _display_cache = {};
-
-    this.show = function() {
-        if (getRealDisplay(_element) !== 'none') {
-            return;
-        }
-
-        var old = _element.getAttribute("displayOld");
-        _element.style.display = old || "";
-
-        if (getRealDisplay(_element) === "none") {
-            var node_name = _element.nodeName;
-            var body = document.body;
-            var display = null;
-            if (_display_cache[node_name]) {
-                display = _display_cache[node_name];
-            } else {
-                var test_element = document.createElement(node_name);
-                body.appendChild(test_element);
-                display = getRealDisplay(test_element);
-                if (display === "none") {
-                    display = "block";
-                }
-                body.removeChild(test_element);
-                _display_cache[node_name] = display;
-            }
-            _element.setAttribute('displayOld', display);
-            _element.style.display = display;
-        }
-    };
-};
-
-
-UTILS.getGradientTexture = function(w, h) {
-    //var end_r = (w < h) ? h/2 : w/2;
-    //var gradient = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, end_r);
-    //gradient.addColorStop(0.5, 'rgba(10,15,50,0.9)');
-    //gradient.addColorStop(1, 'rgba(60,60,80,0.6)');
-    //return gradient;
-
-    var canvas = document.createElement( 'canvas' );
-    canvas.width = w;
-    canvas.height = h;
-
-    var context = canvas.getContext('2d');
-    var gradient = context.createRadialGradient(w / 2,  h / 2,  0,  w / 2,  h / 2,  w / 2);
-    gradient.addColorStop(0.5, 'rgba(15,15,50,1)');
-    gradient.addColorStop(1, 'rgba(60,60,80,0)');
-
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, w, h);
-    var texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    return texture;
-};
-
-
-UTILS.loadTexture = function(path, callback, texture_placeholder) {
-    var texture = new THREE.Texture(texture_placeholder);
-    var material = new THREE.MeshPhongMaterial({map:texture, overdraw:true});
-    var image = new Image();
-    image.onload = function() {
-        texture.needsUpdate = true;
-        material.map.image = this;
-        callback();
-    };
-    image.src = path;
-    return material;
-};
-
-
-UTILS.ProgressManager = function() {
-    var _manager = new THREE.LoadingManager();
-    _manager.onProgress = function(item, loaded, total) {
-        //console.log(item, loaded, total);
-    };
-
-    this.manager = function() {
-        return _manager;
-    }
-};
-
-
-UTILS.TextureLoader = function() {
-    var _loader;
-    var _texture;
-    var _on_load;
-
-    this.load = function(manager, texture_path, on_load) {
-        _on_load = on_load;
-        _loader = new THREE.ImageLoader(manager);
-        _loader.load(texture_path, onLoad);
-    };
-
-    function onLoad(image) {
-        _texture = new THREE.Texture();
-        _texture.image = image;
-        _texture.needsUpdate = true;
-        _texture.wrapS = _texture.wrapT = THREE.RepeatWrapping;
-        _texture.anisotropy = 16;
-        if (_on_load) {
-            _on_load(_texture);
-        }
-    }
-};
-
-
-UTILS.ObjLoader = function() {
-    var _loader;
-    var _on_load;
-
-    this.load = function(manager, obj_path, on_load) {
-        _on_load = on_load;
-        _loader = new THREE.OBJLoader(manager);
-        _loader.load(obj_path, onLoad, onProgress, onError);
-    };
-
-    function onLoad(object) {
-        if(_on_load) {
-            _on_load(object);
-        }
-    }
-
-
-    function onProgress() {
-        console.log("onProgress");
-    }
-
-    function onError() {
-        console.log("Obj loading error.");
-    }
-};
-
-
-
-var AEROBIKE = {VERSIION: '0.1'};
 
 AEROBIKE.Garage = function() {
     var X_VIEW_PERCENT = 0.9;
@@ -186,24 +28,12 @@ AEROBIKE.Garage = function() {
     var _camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000);
     var _progress = new UTILS.ProgressManager();
 
-    this.init = function(on_complete) {
-        var obj_texture = new UTILS.TextureLoader();
-        obj_texture.load(_progress.manager(), "./images/test.jpg", function(texture) {
-            var obj_loader = new UTILS.ObjLoader();
-            obj_loader.load(_progress.manager(), "./objs/bike.obj", function(obj) {
-                obj.position.y = 100;
-                obj.traverse(function(child) {
-                    if (child instanceof THREE.Mesh) {
-                        child.material = new THREE.MeshPhongMaterial({
-                            map:texture, color:0xffffff, shininess:50, shading:THREE.SmoothShading
-                        });
-                    }
-                });
-                _group.add(obj);
-            });
-        });
+    function Garage() {
+        var bike = new MODELS.BikePelican(_progress);
+        _group.add(bike);
+
         var ground_texture = new UTILS.TextureLoader();
-        ground_texture.load(_progress.manager(), "./images/lavatile.jpg", function(texture) {
+        ground_texture.load(_progress, "./images/lavatile.jpg", function(texture) {
             var ground_geometry = new THREE.PlaneBufferGeometry(1000, 1000);
             ground_geometry.rotateX(-Math.PI / 2);
             var ground_material = new THREE.MeshPhongMaterial({
@@ -227,7 +57,7 @@ AEROBIKE.Garage = function() {
         _scene.add(_group);
 
         _camera.position.z = 400;
-    };
+    } Garage();
 
     this.scene = function() {
         return _scene;
@@ -240,10 +70,10 @@ AEROBIKE.Garage = function() {
     this.resize = function() {
         _mouse_x = 0;
         _mouse_y = 0;
-        _window_half_x = window.innerWidth * 0.5;
-        _window_half_y = window.innerHeight * 0.5;
+        _window_half_x  = window.innerWidth * 0.5;
+        _window_half_y  = window.innerHeight * 0.5;
         _base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
-        _camera.aspect = window.innerWidth / window.innerHeight;
+        _camera.aspect  = window.innerWidth / window.innerHeight;
         _camera.updateProjectionMatrix();
     };
 
@@ -261,18 +91,13 @@ AEROBIKE.Garage = function() {
 };
 
 
-AEROBIKE.Game = function() {
-    var _self = this;
+AEROBIKE.Main = function() {
+    var _scope = this;
     var _renderer;
 
     var _garage;
 
-    function render() {
-        _garage.update();
-        _renderer.render(_garage.scene(), _garage.camera());
-    }
-
-    this.init = function() {
+    function Main() {
         new UTILS.CreateStyle("html,body{background-color:#f0f0f0;overflow:hidden;width:100 %;height:100 %;margin:0;padding:0;}");
         new UTILS.CreateStyle("#scene_container{width:100%; height:100%; touch-action:none;}");
 
@@ -287,7 +112,6 @@ AEROBIKE.Game = function() {
         scene_container.appendChild(_renderer.domElement);
 
         _garage = new AEROBIKE.Garage();
-        _garage.init();
 
         document.addEventListener('mousedown',  onMouseDown,  false);
         document.addEventListener('mouseup',    onMouseUp,    false);
@@ -301,7 +125,17 @@ AEROBIKE.Game = function() {
         //var display = new UTILS.Display(scene_container);
         //display.hide();
         //display.show();
-    };
+    } Main();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        render();
+    } animate();
+
+    function render() {
+        _garage.update();
+        _renderer.render(_garage.scene(), _garage.camera());
+    }
 
     function onWindowResize() {
         _garage.resize();
@@ -338,11 +172,6 @@ AEROBIKE.Game = function() {
         //    e.touches[0].pageY;
         //}
     }
-
-    this.animate = function() {
-        requestAnimationFrame(_self.animate);
-        render();
-    };
 };
 
 
@@ -358,6 +187,4 @@ AEROBIKE.Game = function() {
 //var button = new ui.Button(undefined, 200, 100, 100, 30, "на старт", 20);
 //button.open();
 
-var game = new AEROBIKE.Game();
-game.init();
-game.animate();
+var main = new AEROBIKE.Main();
