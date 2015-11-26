@@ -7,7 +7,29 @@
 var AEROBIKE = {};
 
 AEROBIKE.Start = function() {
+    function Start() {
+        var start_container = new UTILS.CreateContainer("start_container");
+        //start_container.appendChild(_renderer.domElement);
 
+        var element = document.createElement( 'div' );
+        element.className = 'element';
+        element.style.backgroundColor = 'rgba(0,127,127,' + ( Math.random() * 0.5 + 0.25 ) + ')';
+
+        var number = document.createElement( 'div' );
+        number.className = 'number';
+        number.textContent = (i/5) + 1;
+        element.appendChild( number );
+
+        var symbol = document.createElement( 'div' );
+        symbol.className = 'symbol';
+        symbol.textContent = table[ i ];
+        element.appendChild( symbol );
+
+        var details = document.createElement( 'div' );
+        details.className = 'details';
+        details.innerHTML = table[ i + 1 ] + '<br>' + table[ i + 2 ];
+        element.appendChild( details );
+    } Start();
 };
 
 
@@ -32,8 +54,8 @@ AEROBIKE.Garage = function() {
         var bike = new MODELS.BikePelican(_progress);
         _group.add(bike);
 
-        var ground_texture = new UTILS.TextureLoader();
-        ground_texture.load(_progress, "./images/lavatile.jpg", function(texture) {
+        var ground_texture = new UTILS.TextureLoader(_progress);
+        ground_texture.load("./images/lavatile.jpg", function(texture) {
             var ground_geometry = new THREE.PlaneBufferGeometry(1000, 1000);
             ground_geometry.rotateX(-Math.PI / 2);
             var ground_material = new THREE.MeshPhongMaterial({
@@ -98,9 +120,6 @@ AEROBIKE.Main = function() {
     var _garage;
 
     function Main() {
-        new UTILS.CreateStyle("html,body{background-color:#f0f0f0;overflow:hidden;width:100 %;height:100 %;margin:0;padding:0;}");
-        new UTILS.CreateStyle("#scene_container{width:100%; height:100%; touch-action:none;}");
-
         _renderer = new THREE.WebGLRenderer({antialias:true,alpha:false});
         _renderer.setClearColor(0x0a0c1f);
         _renderer.setPixelRatio(window.devicePixelRatio);
@@ -121,10 +140,6 @@ AEROBIKE.Main = function() {
         document.addEventListener('touchmove',  onTouchMove,  false);
 
         window.addEventListener('resize', onWindowResize, false);
-
-        //var display = new UTILS.Display(scene_container);
-        //display.hide();
-        //display.show();
     } Main();
 
     function animate() {
@@ -175,16 +190,4 @@ AEROBIKE.Main = function() {
 };
 
 
-//var ui = new UI.View();
-////var container = new ui.Container(10, 10, window.innerWidth - 20, window.innerHeight - 20);
-////container.open();
-//
-////var button = new ui.Button(undefined, window.innerWidth / 2 - 20, window.innerHeight / 2 - 20, 100, 30);
-//var close_button = function() {
-//    button.close();
-//};
-////var button = new ui.Button(close_button, 200, 100, 100, 30, "кнопка", 20);
-//var button = new ui.Button(undefined, 200, 100, 100, 30, "на старт", 20);
-//button.open();
-
-var main = new AEROBIKE.Main();
+new AEROBIKE.Main();

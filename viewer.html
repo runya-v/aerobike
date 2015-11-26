@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+        <title>Viewer Aerobike</title>
+        <link rel="stylesheet" type="text/css" href="styles/ui.css">
+        <script src="scripts/three.min.js"></script>
+        <script src="scripts/OBJLoader.js"></script>
+        <script src="scripts/utils.js"></script>
+    </head>
+    <body>
+        <div id="menu">
+            <button id="model_load_btn">Загрузить модель</button>
+            <input id="input_file" type="file" name="file_name" style='position:absolute;visibility:hidden;'/>
+        <script>
+            var scope = this;
+            var X_VIEW_PERCENT = 0.9;
+            var Y_VIEW_PERCENT = 0.7;
+            var X_SCENE_ROTATION = 0.001;
+            var BASE_CAMERA_POS_PERCENT = 0.15;
+
+            var mouse_x = 0;
+            var mouse_y = 0;
+            var window_half_x = window.innerWidth * 0.5;
+            var window_half_y = window.innerHeight * 0.5;
+            var base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
+            var is_mouse_down = false;
+
+            var renderer;
+            var scene;
+            var camera;
+            var controls;
+
+            function main() {
+                renderer = new THREE.WebGLRenderer({antialias: true, alpha: false});
+                renderer.setClearColor(0x0a0c1f);
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.gammaInput = true;
+                renderer.gammaOutput = true;
+
+                var scene_container = new UTILS.CreateContainer("scene_container");
+                scene_container.appendChild(renderer.domElement);
+
+                camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
+                camera.position.z = 500;
+
+                scene = new THREE.Scene();
+                group = new THREE.Group();
+                group.position.y = -100;
+                scene.add(group);
+                var light = new THREE.DirectionalLight(0xffffff, 1);
+                light.position.set(0, 1, 0).normalize();
+                scene.add(new THREE.AmbientLight(0xffffff));
+
+                var load_model_btn = document.getElementById('model_load_btn');
+                load_model_btn.addEventListener('click', function(e) {
+                    var input_file = document.getElementById('input_file');
+                    input_file.addEventListener("change", function(e) {
+                        var files = this.files;
+                        var progress = new UTILS.ProgressManager();
+                        var obj_texture = new UTILS.TextureLoader(progress);
+                        obj_texture.load("./images/test.jpg", function(texture) {
+                            var obj_loader = new THREE.OBJLoader(progress);
+                            obj_loader.load("./objs/" + files[0].name, function(obj) {
+                                obj.position.y = 100;
+                                obj.traverse(function (child) {
+                                    if (child instanceof THREE.Mesh) {
+                                        child.material = new THREE.MeshPhongMaterial({
+                                            map:texture, color:0xffffff, shininess:50, shading:THREE.SmoothShading
+                                        });
+                                    }
+                                });
+                                group.add(obj);
+                            }, function () {
+                                //onProgress
+                            }, function () {
+                                //onError
+                            });
+                        });
+                    }, false);
+                    input_file.click();
+                }, false);
+
+                document.addEventListener('mousemove',  onMouseMove,  false);
+                document.addEventListener('mousedown',  onMouseDown,  false);
+                document.addEventListener('mouseup',    onMouseUp,    false);
+
+                window.addEventListener('resize', onWindowResize, false);
+            } main();
+
+            function onMouseDown(e) {
+                is_mouse_down = true;
+            }
+
+            function onMouseUp(e) {
+                is_mouse_down = false;
+                //group.rotation.y = mouse_x * X_VIEW_PERCENT - camera.position.x;
+            }
+
+            function onMouseMove(e) {
+                if (is_mouse_down) {
+                    mouse_x = (e.clientX - window_half_x);
+                    mouse_y = (e.clientY - window_half_y - base_y_cam_pos);
+                }
+            }
+
+            function onWindowResize() {
+                mouse_x = 0;
+                mouse_y = 0;
+                window_half_x  = window.innerWidth * 0.5;
+                window_half_y  = window.innerHeight * 0.5;
+                base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
+
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                render();
+            }
+
+            function render() {
+                group.rotation.y -= X_SCENE_ROTATION;
+                camera.position.x += (mouse_x * X_VIEW_PERCENT - camera.position.x);
+                camera.position.y += (-mouse_y * Y_VIEW_PERCENT - camera.position.y);
+                camera.lookAt(scene.position);
+                renderer.render(scene, camera);
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                render();
+            } animate();
+        </script>
+    </body>
+</html>

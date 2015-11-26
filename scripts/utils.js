@@ -122,15 +122,15 @@ UTILS.ProgressManager = function() {
 UTILS.ProgressManager.prototype = Object.create(THREE.LoadingManager.prototype);
 
 
-UTILS.TextureLoader = function() {
-    var _loader;
+UTILS.TextureLoader = function(manager) {
+    THREE.ImageLoader.call(this);
+    var _scope = this;
     var _texture;
     var _on_load;
 
-    this.load = function(manager, texture_path, on_load) {
+    this.load = function(texture_path, on_load) {
         _on_load = on_load;
-        _loader = new THREE.ImageLoader(manager);
-        _loader.load(texture_path, onLoad);
+        _scope.constructor.prototype.load.call(_scope, texture_path, onLoad);
     };
 
     function onLoad(image) {
@@ -144,29 +144,4 @@ UTILS.TextureLoader = function() {
         }
     }
 };
-
-
-UTILS.ObjLoader = function() {
-    var _loader;
-    var _on_load;
-
-    this.load = function(manager, obj_path, on_load) {
-        _on_load = on_load;
-        _loader = new THREE.OBJLoader(manager);
-        _loader.load(obj_path, onLoad, onProgress, onError);
-    };
-
-    function onLoad(object) {
-        if(_on_load) {
-            _on_load(object);
-        }
-    }
-
-    function onProgress() {
-        console.log("onProgress");
-    }
-
-    function onError() {
-        console.log("Obj loading error.");
-    }
-};
+UTILS.TextureLoader.prototype = Object.create(THREE.ImageLoader.prototype);
