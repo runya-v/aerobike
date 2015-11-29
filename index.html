@@ -2,7 +2,7 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
 		<title>Aerobike</title>
-		<link rel="stylesheet" type="text/css" href="styles/ui.css">
+		<link rel="stylesheet" href="styles.css">
 		<script src="scripts/raphael.min.js"></script>
 		<script src="scripts/three.min.js"></script>
 		<script src="scripts/CSS3DRenderer.js"></script>
@@ -13,7 +13,210 @@
 		<script src="scripts/models.js"></script>
 	</head>
 	<body>
-		<script src="scripts/ui.js"></script>
+		<!-- Render -->
+		<div id="scene_container"/>
+		<!-- Start -->
+		<div id="start_screen">
+			<div id="start_image_box">
+				<style>
+					#start_image_box {
+						position: absolute;
+						background: transparent;
+						top: 10%;
+						width: 100%;
+						text-align: center;
+					}
+					#start_img {
+						mix-width: 50%;
+						mix-height: 50%;
+						max-width: 50%;
+						max-height: 50%;
+						text-align: center;
+					}
+				</style>
+				<img id="start_img" src="images/big_logo.jpg">
+			</div>
+			<div id="start_menu">
+				<style>
+					#start_menu {
+						position: absolute;
+						width: 100%;
+						bottom: 10%;
+						text-align: center;
+					}
+				</style>
+				<button id="login_btn">
+					<img id="login_img" src="images/icons/login.png">
+				</button>
+				<button id="login_vk_btn">
+					<img id="login_vk_img" src="images/icons/login_vk.png">
+				</button>
+				<button id="login_fb_btn">
+					<img id="login_fb_img" src="images/icons/login_fb.png">
+				</button>
+				<button id="without_login_btn">
+					<img id="without_login_img" src="images/icons/without_login.png">
+				</button>
+			</div>
+		</div>
+		<!-- Garage -->
+		<div id="garage_screen" hidden>
+			<style>
+				#garage_screen {
+					position: absolute;
+					background: transparent;
+					width: 100%;
+					height: 100%;
+					text-align: center;
+				}
+			</style>
+			<div id="bike_info">
+				<style>
+					#bike_info {
+						position: absolute;
+						width: 60%;
+					}
+				</style>
+			</div>
+			<div id="avatar_box">
+				<style>
+					#avatar_box {
+						position: absolute;
+						right: 10%;
+						width: 30%;
+						text-align: center;
+					}
+					#avatar_img {
+						position: relative;
+						right: 0px;
+						width: 256px;
+						height: 256px;
+					}
+				</style>
+				<img id="avatar_img" src="images/default_avatar.png">
+			</div>
+			<div id="user_level">1</div>
+			<div id="user_stars">10</div>
+			<div id="prev_bike_box">
+				<style>
+					#prev_bike_box {
+						position: absolute;
+						top: 50%;
+						right: 20%;
+						text-align: center;
+					}
+				</style>
+				<button id="prev_bike_btn">
+					<img id="prev_bike_img" src="images/icons/prev_bike.png">
+				</button>
+			</div>
+			<div id="next_bike_box">
+				<style>
+					#next_bike_box {
+						position: absolute;
+						top: 50%;
+						left: 20%;
+						text-align: center;
+					}
+				</style>
+				<button id="next_bike_btn">
+					<img id="next_bike_img" src="images/icons/next_bike.png">
+				</button>
+			</div>
+			<div id="garage_menu">
+				<style>
+					#garage_menu {
+						position: absolute;
+						bottom: 10%;
+						width: 100%;
+						text-align: center;
+					}
+				</style>
+				<button id="settings_btn">
+					<img id="settings_img" src="images/icons/settings.png">
+				</button>
+				<button id="rating_btn">
+					<img id="rating_img" src="images/icons/rating.png">
+				</button>
+				<button id="shop_btn">
+					<img id="shop_img" src="images/icons/shop.png">
+				</button>
+				<button id="chooce_partner_btn">
+					<img id="chooce_partner_img" src="images/icons/chooce_partner.png">
+				</button>
+				<button id="fast_game_btn">
+					<img id="fast_game_img" src="images/icons/fast_game.png">
+				</button>
+				<button id="about_btn">
+					<img id="about_img" src="images/icons/about.png">
+				</button>
+			</div>
+		</div>
+		<!-- Settings -->
+		<div id="settings_screen" hidden>
+			<div id="buttons_cfg_box">
+
+			</div>
+			<div id="intricacy_box">
+
+			</div>
+			<button id="return_settings_btn">
+				<img id="return_settings_img" src="images/icons/return.png">
+			</button>
+		</div>
+		<!-- Rating -->
+		<div id="rating_screen" hidden>
+			<button id="return_rating_btn">
+				<img id="return_rating_img" src="images/icons/return.png">
+			</button>
+		</div>
+		<!-- Shop -->
+		<div id="shop_screen" hidden>
+			<button id="return_shop_btn">
+				<img id="return_shop_img" src="images/icons/return.png">
+			</button>
+		</div>
+		<!-- About -->
+		<div id="about_screen" hidden>
+			<button id="return_about_btn">
+				<img id="return_about_img" src="images/icons/return.png">
+			</button>
+		</div>
+		<!-- Chooce partner -->
+		<div id="chooce_partner_screen" hidden>
+			<button id="find_partners_btn">
+				<img id="find_partners_img" src="images/icons/find_partners.png">
+			</button>
+			<button id="game_btn">
+				<img id="game_img" src="images/icons/game.png">
+			</button>
+			<button id="return_chooce_partner_btn">
+				<img id="return_chooce_partner_img" src="images/icons/return.png">
+			</button>
+		</div>
+		<!-- Game -->
+		<div id="game_screen" hidden>
+			<div id="speedo_box"></div>
+			<div id="jet_thrust_box"></div>
+			<div id="racing_traffic_lights_box"></div>
+			<div id="game_menu">
+				<button id="up_btn">
+					<img id="up_img" src="images/icons/up.png">
+				</button>
+				<button id="down_btn">
+					<img id="down_img" src="images/icons/down.png">
+				</button>
+				<button id="left_btn">
+					<img id="left_img" src="images/icons/left.png">
+				</button>
+				<button id="right_btn">
+					<img id="right_img" src="images/icons/right.png">
+				</button>
+				<button id="return_game_btn">
+					<img id="return_game_img" src="images/icons/return.png">
+				</button>
+			</div>
+		</div>
 		<script src="scripts/main.js"></script>
 	</body>
 </html>
