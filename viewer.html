@@ -3,15 +3,25 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
         <title>Viewer Aerobike</title>
-        <link rel="stylesheet" type="text/css" href="styles/ui.css">
+        <link rel="stylesheet" href="styles.css">
         <script src="scripts/three.min.js"></script>
         <script src="scripts/OBJLoader.js"></script>
         <script src="scripts/utils.js"></script>
     </head>
     <body>
-        <div id="menu">
+        <div id="viewer_menu">
+            <style>
+                #viewer_menu {
+                    position: absolute;
+                    background: transparent;
+                    bottom: 5%;
+                    width: 100%;
+                    text-align: center;
+                }
+            </style>
             <button id="model_load_btn">Загрузить модель</button>
             <input id="input_file" type="file" name="file_name" style='position:absolute;visibility:hidden;'/>
+        </div>
         <script>
             var scope = this;
             var X_VIEW_PERCENT = 0.9;
