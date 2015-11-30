@@ -87,9 +87,7 @@
                                 });
                                 var model = collada.scene;
                                 model.position.y = 100;
-                                model.material = new THREE.MeshBasicMaterial({
-                                    map:texture, color:0xffffff, shading:THREE.SmoothShading
-                                });
+                                model.children[0].children[0].material = new THREE.MeshBasicMaterial({map:texture});
                                 //var model_geometry = model.children[0].geometry;
                                 //var model_material = model.children[0].material;
 
