@@ -39,7 +39,14 @@ AEROBIKE.Start = function(on_without_login, on_login, on_vk_login, on_fb_login) 
 AEROBIKE.Start.prototype = Object.create(AEROBIKE.Screen.prototype);
 
 
-AEROBIKE.Garage = function() {
+// Garage screen
+AEROBIKE.Garage = function(
+    on_settings,
+    on_rating,
+    on_shop,
+    on_chooce_partner,
+    on_fast_game,
+    on_about) {
     AEROBIKE.Screen.call(this,
         new THREE.Scene(),
         new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
@@ -61,7 +68,12 @@ AEROBIKE.Garage = function() {
     var _progress = new UTILS.ProgressManager();
 
     function Garage() {
-        _display.show();
+        document.getElementById("settings_btn").addEventListener("click", on_settings, false);
+        document.getElementById("rating_btn").addEventListener("click", on_rating, false);
+        document.getElementById("shop_btn").addEventListener("click", on_shop, false);
+        document.getElementById("chooce_partner_btn").addEventListener("click", on_chooce_partner, false);
+        document.getElementById("fast_game_btn").addEventListener("click", on_fast_game, false);
+        document.getElementById("about_btn").addEventListener("click", on_about, false);
 
         var bike = new MODELS.BikePelican(_progress);
         _group.add(bike);
@@ -92,8 +104,34 @@ AEROBIKE.Garage = function() {
 
         _scope.camera.position.z = 400;
 
-        document.addEventListener('mousemove',  onMouseMove,  false);
+        document.getElementById("prev_bike_btn").addEventListener("click", onPrevBike, false);
+        document.getElementById("next_bike_btn").addEventListener("click", onNextBike, false);
+
+        document.addEventListener('mousemove', onMouseMove, false);
+        document.addEventListener('mousedown', onMouseDown, false);
+        document.addEventListener('mouseup', onMouseUp, false);
     } Garage();
+
+    function onPrevBike() {
+
+    }
+
+    function onNextBike() {
+
+    }
+
+    function onMouseMove(e) {
+        _mouse_x = (e.clientX - _window_half_x);
+        _mouse_y = (e.clientY - _window_half_y - _base_y_cam_pos);
+    }
+
+    function onMouseDown(e) {
+
+    }
+
+    function onMouseUp(e) {
+
+    }
 
     this.hide = function() {
         _display.hide();
@@ -119,76 +157,207 @@ AEROBIKE.Garage = function() {
         _scope.camera.position.y += (-_mouse_y * Y_VIEW_PERCENT - _scope.camera.position.y);
         _scope.camera.lookAt(_scope.scene.position);
     };
+};
+AEROBIKE.Garage.prototype = Object.create(AEROBIKE.Screen.prototype);
 
-    function onMouseMove(e) {
-        _mouse_x = (e.clientX - _window_half_x);
-        _mouse_y = (e.clientY - _window_half_y - _base_y_cam_pos);
+
+// Settings screen
+AEROBIKE.Settings = function(garage, on_return_settings) {
+    AEROBIKE.Screen.call(this, garage.scene, garage.camera);
+
+    var _display = new UTILS.Display(document.getElementById("settings_screen"));
+
+    function Settings() {
+        document.getElementById("return_settings_btn").addEventListener("click", on_return_settings, false);
+    } Settings();
+
+    this.resize = function() {
+        garage.resize();
+    };
+
+    this.update = function() {
+        garage.update();
+    };
+
+    this.hide = function() {
+        _display.hide();
+    };
+
+    this.show = function() {
+        _display.show();
     };
 };
-AEROBIKE.Garage.prototype = Object.create(AEROBIKE.Screen.prototype);
+AEROBIKE.Settings.prototype = Object.create(AEROBIKE.Screen.prototype);
 
 
-AEROBIKE.Settings = function() {
+// Rating screen
+AEROBIKE.Rating = function(garage, on_return_rating) {
+    AEROBIKE.Screen.call(this, garage.scene, garage.camera);
+
+    var _display = new UTILS.Display(document.getElementById("rating_screen"));
+
+    function Rating() {
+        document.getElementById("return_rating_btn").addEventListener("click", on_return_rating, false);
+    } Rating();
+
+    this.resize = function() {
+        garage.resize();
+    };
+
+    this.update = function() {
+        garage.update();
+    };
+
+    this.hide = function() {
+        _display.hide();
+    };
+
+    this.show = function() {
+        _display.show();
+    };
+};
+AEROBIKE.Rating.prototype = Object.create(AEROBIKE.Screen.prototype);
+
+
+// Shop screen
+AEROBIKE.Shop = function(garage, on_return_shop) {
+    AEROBIKE.Screen.call(this, garage.scene, garage.camera);
+
+    var _display = new UTILS.Display(document.getElementById("shop_screen"));
+
+    function Shop() {
+        document.getElementById("return_shop_btn").addEventListener("click", on_return_shop, false);
+    } Shop();
+
+    this.resize = function() {
+        garage.resize();
+    };
+
+    this.update = function() {
+        garage.update();
+    };
+
+    this.hide = function() {
+        _display.hide();
+    };
+
+    this.show = function() {
+        _display.show();
+    };
+};
+AEROBIKE.Shop.prototype = Object.create(AEROBIKE.Screen.prototype);
+
+
+// About screen
+AEROBIKE.About = function(garage, on_return_about) {
+    AEROBIKE.Screen.call(this, garage.scene, garage.camera);
+
+    var _display = new UTILS.Display(document.getElementById("about_screen"));
+
+    function About() {
+        document.getElementById("return_about_btn").addEventListener("click", on_return_about, false);
+    } About();
+
+    this.resize = function() {
+        garage.resize();
+    };
+
+    this.update = function() {
+        garage.update();
+    };
+
+    this.hide = function() {
+        _display.hide();
+    };
+
+    this.show = function() {
+        _display.show();
+    };
+};
+AEROBIKE.About.prototype = Object.create(AEROBIKE.Screen.prototype);
+
+
+// ChoocePartner screen
+AEROBIKE.ChoocePartner = function(garage, on_return_chooce_partner) {
+    AEROBIKE.Screen.call(this, garage.scene, garage.camera);
+
+    var _display = new UTILS.Display(document.getElementById("chooce_partner_screen"));
+
+    function ChoocePartner() {
+        document.getElementById("return_chooce_partner_btn").addEventListener("click", on_return_chooce_partner, false);
+    } ChoocePartner();
+
+    this.resize = function() {
+        garage.resize();
+    };
+
+    this.update = function() {
+        garage.update();
+    };
+
+    this.hide = function() {
+        _display.hide();
+    };
+
+    this.show = function() {
+        _display.show();
+    };
+};
+AEROBIKE.ChoocePartner.prototype = Object.create(AEROBIKE.Screen.prototype);
+
+
+// Game screen
+AEROBIKE.Game = function(on_return_game) {
     AEROBIKE.Screen.call(this,
         new THREE.Scene(),
         new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
 
+    var _display = new UTILS.Display(document.getElementById("game_screen"));
+
+    function Game() {
+        document.getElementById("return_game_btn").addEventListener("click", on_return_game, false);
+
+        document.getElementById("up_game_btn").addEventListener("click", onUp, false);
+        document.getElementById("down_game_btn").addEventListener("click", onDown, false);
+        document.getElementById("left_game_btn").addEventListener("click", onLeft, false);
+        document.getElementById("right_game_btn").addEventListener("click", onRight, false);
+    } Game();
+
+    function onUp() {}
+    function onDown() {}
+    function onLeft() {}
+    function onRight() {}
+
+    this.resize = function() {
+    };
+
+    this.update = function() {
+    };
+
+    this.hide = function() {
+        _display.hide();
+    };
+
+    this.show = function() {
+        _display.show();
+    };
 };
-AEROBIKE.Garage.prototype = Object.create(AEROBIKE.Screen.prototype);
-
-
-AEROBIKE.Rating = function() {
-    AEROBIKE.Screen.call(this,
-        new THREE.Scene(),
-        new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
-
-};
-AEROBIKE.Garage.prototype = Object.create(AEROBIKE.Screen.prototype);
-
-
-AEROBIKE.Shop = function() {
-    AEROBIKE.Screen.call(this,
-        new THREE.Scene(),
-        new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
-
-};
-AEROBIKE.Garage.prototype = Object.create(AEROBIKE.Screen.prototype);
-
-
-AEROBIKE.About = function() {
-    AEROBIKE.Screen.call(this,
-        new THREE.Scene(),
-        new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
-
-};
-AEROBIKE.Garage.prototype = Object.create(AEROBIKE.Screen.prototype);
-
-
-AEROBIKE.ChoocePartner = function() {
-    AEROBIKE.Screen.call(this,
-        new THREE.Scene(),
-        new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
-
-};
-AEROBIKE.Garage.prototype = Object.create(AEROBIKE.Screen.prototype);
-
-
-AEROBIKE.Game = function() {
-    AEROBIKE.Screen.call(this,
-        new THREE.Scene(),
-        new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
-
-};
-AEROBIKE.Garage.prototype = Object.create(AEROBIKE.Screen.prototype);
+AEROBIKE.Game.prototype = Object.create(AEROBIKE.Screen.prototype);
 
 
 AEROBIKE.Main = function() {
     var _scope = this;
     var _renderer;
 
+    var _screen;
     var _start;
     var _garage;
-    var _screen;
+    var _settings;
+    var _rating;
+    var _shop;
+    var _chooce_partner;
+    var _about;
+    var _game;
 
     function Main() {
         _renderer = new THREE.WebGLRenderer({antialias:true,alpha:false});
@@ -208,17 +377,105 @@ AEROBIKE.Main = function() {
     } Main();
 
     function toSimpleGarageScreen(e) {
-        console.log("toSimpleGarageScreen");
+        _garage = new AEROBIKE.Garage(
+            onSettings,
+            onRating,
+            onShop,
+            onChoocePartner,
+            onFastGame,
+            onAbout);
+        _settings = new AEROBIKE.Settings(_garage, onReturnSettings);
+        _rating = new AEROBIKE.Rating(_garage, onReturnRating);
+        _shop = new AEROBIKE.Shop(_garage, onReturnShop);
+        _chooce_partner = new AEROBIKE.ChoocePartner(_garage, onReturnChoocePartner);
+        _about = new AEROBIKE.About(_garage, onReturnAbout);
+        _game = new AEROBIKE.Game(onReturnGame);
+
         _start.hide();
-        _garage = new AEROBIKE.Garage();
+        _garage.show();
         _screen = _garage;
     }
 
-    function animate() {
-        requestAnimationFrame(animate);
-        render();
-    } animate();
+    // Garage methods
+    function onSettings() {
+        _garage.hide();
+        _settings.show();
+        _screen = _settings;
+    }
 
+    function onRating() {
+        _garage.hide();
+        _rating.show();
+        _screen = _rating;
+    }
+
+    function onShop() {
+        _garage.hide();
+        _shop.show();
+        _screen = _shop;
+    }
+
+    function onChoocePartner() {
+        _garage.hide();
+        _chooce_partner.show();
+        _screen = _chooce_partner;
+    }
+
+    function onAbout() {
+        _garage.hide();
+        _about.show();
+        _screen = _about;
+    }
+
+    function onFastGame() {
+        _garage.hide();
+        _game.show();
+        _screen = _game;
+    }
+
+    // Main methods
+    function onReturnSettings() {
+        _settings.hide();
+        _garage.show();
+        _screen = _garage;
+    }
+
+    // Rating methods
+    function onReturnRating() {
+        _rating.hide();
+        _garage.show();
+        _screen = _garage;
+    }
+
+    // Shop methods
+    function onReturnShop() {
+        _shop.hide();
+        _garage.show();
+        _screen = _garage;
+    }
+
+    // cHOOCE PARTNER methods
+    function onReturnChoocePartner() {
+        _chooce_partner.hide();
+        _garage.show();
+        _screen = _garage;
+    }
+
+    // About methods
+    function onReturnAbout() {
+        _about.hide();
+        _garage.show();
+        _screen = _garage;
+    }
+
+    // Game methods
+    function onReturnGame() {
+        _game.hide();
+        _garage.show();
+        _screen = _garage;
+    }
+
+    // Main methods
     function render() {
         _screen.update();
         _renderer.render(_screen.scene, _screen.camera);
@@ -229,7 +486,10 @@ AEROBIKE.Main = function() {
         _renderer.setSize(window.innerWidth, window.innerHeight);
         render();
     }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        render();
+    } animate();
 };
-
-
 new AEROBIKE.Main();
