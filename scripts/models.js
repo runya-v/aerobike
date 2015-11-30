@@ -9,42 +9,23 @@ var MODELS = {};
 MODELS.Pilot = function() {};
 
 
-MODELS.BikePelican = function(progress) {
+MODELS.BikePelican = function() {
     THREE.Group.call(this);
     var _scope = this;
 
     function BikePelican() {
-        var obj_texture = new UTILS.TextureLoader(progress);
-        obj_texture.load("./images/test.jpg", function(texture) {
-            var obj_loader = new THREE.OBJLoader(progress);
-            obj_loader.load("./objs/bike.obj", function(obj) {
-                obj.position.y = 100;
-                obj.traverse(function(child) {
-                    if (child instanceof THREE.Mesh) {
-                        child.material = new THREE.MeshPhongMaterial({
-                            map:texture, color:0xffffff, shininess:50, shading:THREE.SmoothShading
-                        });
-                    }
-                });
-                _scope.add(obj);
-            }, function() {
-                //onProgress
-            }, function() {
-                //onError
+        var loader = new THREE.ColladaLoader();
+        //loader.convertUpAxis = true;
+        loader.load( "./collada/bike_01.dae", function(collada) {
+            collada.scene.traverse(function(child) {
+                if (child instanceof THREE.SkinnedMesh) {
+                    var animation = new THREE.Animation(child, child.geometry.animation);
+                    animation.play();
+                    camera.lookAt( child.position );
+                }
             });
+            _scope.add(collada.scene);
 
-            //var obj_loader = new UTILS.ObjLoader();
-            //obj_loader.load(progress, "./objs/bike.obj", function(obj) {
-            //    obj.position.y = 100;
-            //    obj.traverse(function(child) {
-            //        if (child instanceof THREE.Mesh) {
-            //            child.material = new THREE.MeshPhongMaterial({
-            //                map:texture, color:0xffffff, shininess:50, shading:THREE.SmoothShading
-            //            });
-            //        }
-            //    });
-            //    _scope.add(obj);
-            //});
         });
     } BikePelican();
 

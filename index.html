@@ -7,14 +7,35 @@
 		<script src="scripts/three.min.js"></script>
 		<script src="scripts/CSS3DRenderer.js"></script>
 		<script src="scripts/Projector.js"></script>
-		<script src="scripts/CanvasRenderer.js"></script>
-		<script src="scripts/OBJLoader.js"></script>
+		<script src="scripts/SceneLoader.js"></script>
+		<script src="scripts/MorphAnimMesh.js"></script>
+		<script src="scripts/ColladaAnimation.js"></script>
+		<script src="scripts/ColladaAnimationHandler.js"></script>
+		<script src="scripts/ColladaKeyFrameAnimation.js"></script>
+		<script src="scripts/ColladaLoader.js"></script>
 		<script src="scripts/utils.js"></script>
 		<script src="scripts/models.js"></script>
 	</head>
 	<body>
 		<!-- Render -->
 		<div id="scene_container"/>
+		<!-- Progress -->
+		<div id="progress">
+			<div id="progress_bar" class="shadow">
+				<style>
+					#progress_bar {
+						position: absolute;
+						background: transparent;
+						top :50%;
+						width: 100%;
+						height: 100%;
+						text-align: center;
+					}
+				</style>
+				<div id="bar" class="shadow">
+				</div>
+			</div>
+		</div>
 		<!-- Start -->
 		<div id="start_screen">
 			<div id="start_image_box">

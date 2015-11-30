@@ -65,7 +65,6 @@ AEROBIKE.Garage = function(
 
     var _display = new UTILS.Display(document.getElementById("garage_screen"));
     var _group = new THREE.Group();
-    var _progress = new UTILS.ProgressManager();
 
     function Garage() {
         document.getElementById("settings_btn").addEventListener("click", on_settings, false);
@@ -75,10 +74,10 @@ AEROBIKE.Garage = function(
         document.getElementById("fast_game_btn").addEventListener("click", on_fast_game, false);
         document.getElementById("about_btn").addEventListener("click", on_about, false);
 
-        var bike = new MODELS.BikePelican(_progress);
+        var bike = new MODELS.BikePelican();
         _group.add(bike);
 
-        var ground_texture = new UTILS.TextureLoader(_progress);
+        var ground_texture = new UTILS.TextureLoader();
         ground_texture.load("./images/lavatile.jpg", function(texture) {
             var ground_geometry = new THREE.PlaneBufferGeometry(1000, 1000);
             ground_geometry.rotateX(-Math.PI / 2);

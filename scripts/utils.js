@@ -122,7 +122,48 @@ UTILS.ProgressManager = function() {
 UTILS.ProgressManager.prototype = Object.create(THREE.LoadingManager.prototype);
 
 
-UTILS.TextureLoader = function(manager) {
+
+UTILS.ColladaLoader = function() {
+    THREE.ColladaLoader.call(this);
+    var _scope = this;
+    var _on_load;
+
+    this.load = function(url, on_load) {
+        _on_load = on_load;
+        _scope.constructor.prototype.load.call(url, onLoad);
+    }
+
+    function onLoad(collada) {
+        var dae = collada.scene;
+        var animation;
+        dae.traverse(function (child) {
+            if (child instanceof THREE.SkinnedMesh) {
+                animation = new THREE.Animation(child, child.geometry.animation);
+            }
+        });
+        dae.updateMatrix();
+        if (_on_load) {
+            _on_load(dae, animation);
+        }
+    }
+};
+UTILS.ColladaLoader.prototype = Object.create(THREE.ColladaLoader.prototype);
+
+//var callbackProgress = function( progress, result ) {
+//
+//    var bar = 250,
+//        total = progress.totalModels + progress.totalTextures,
+//        loaded = progress.loadedModels + progress.loadedTextures;
+//
+//    if ( total )
+//        bar = Math.floor( bar * loaded / total );
+//
+//    $( "bar" ).style.width = bar + "px";
+//
+//};
+
+
+UTILS.TextureLoader = function() {
     THREE.ImageLoader.call(this);
     var _scope = this;
     var _texture;
