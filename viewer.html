@@ -5,7 +5,11 @@
         <title>Viewer Aerobike</title>
         <link rel="stylesheet" href="styles.css">
         <script src="scripts/three.min.js"></script>
-        <script src="scripts/OBJLoader.js"></script>
+        <script src="scripts/MorphAnimMesh.js"></script>
+        <script src="scripts/ColladaAnimation.js"></script>
+        <script src="scripts/ColladaAnimationHandler.js"></script>
+        <script src="scripts/ColladaKeyFrameAnimation.js"></script>
+        <script src="scripts/ColladaLoader.js"></script>
         <script src="scripts/utils.js"></script>
     </head>
     <body>
@@ -71,23 +75,51 @@
                         var progress = new UTILS.ProgressManager();
                         var obj_texture = new UTILS.TextureLoader(progress);
                         obj_texture.load("./images/test.jpg", function(texture) {
-                            var obj_loader = new THREE.OBJLoader(progress);
-                            obj_loader.load("./objs/" + files[0].name, function(obj) {
-                                obj.position.y = 100;
-                                obj.traverse(function (child) {
-                                    if (child instanceof THREE.Mesh) {
-                                        child.material = new THREE.MeshPhongMaterial({
-                                            map:texture, color:0xffffff, shininess:50, shading:THREE.SmoothShading
-                                        });
+                            var loader = new THREE.ColladaLoader();
+                            //loader.convertUpAxis = true;
+                            loader.load("./collada/" + files[0].name, function (collada) {
+                                collada.scene.traverse(function (child) {
+                                    if (child instanceof THREE.SkinnedMesh) {
+                                        var animation = new THREE.Animation(child, child.geometry.animation);
+                                        animation.play();
+                                        camera.lookAt(child.position);
                                     }
                                 });
-                                group.add(obj);
-                            }, function () {
-                                //onProgress
-                            }, function () {
-                                //onError
+                                var model = collada.scene;
+                                model.position.y = 100;
+                                model.material = new THREE.MeshBasicMaterial({
+                                    map:texture, color:0xffffff, shading:THREE.SmoothShading
+                                });
+                                //var model_geometry = model.children[0].geometry;
+                                //var model_material = model.children[0].material;
+
+//                                if (model instanceof THREE.Mesh) {
+//                                    model.material = new THREE.MeshPhongMaterial({
+//                                        map:texture, color:0xffffff, shading:THREE.SmoothShading
+//                                    });
+//                                }
+                                scene.add(collada.scene);
+
                             });
                         });
+//                        obj_texture.load("./images/test.jpg", function(texture) {
+//                            var obj_loader = new THREE.OBJLoader(progress);
+//                            obj_loader.load("./objs/" + files[0].name, function(obj) {
+//                                obj.position.y = 100;
+//                                obj.traverse(function (child) {
+//                                    if (child instanceof THREE.Mesh) {
+//                                        child.material = new THREE.MeshPhongMaterial({
+//                                            map:texture, color:0xffffff, shininess:50, shading:THREE.SmoothShading
+//                                        });
+//                                    }
+//                                });
+//                                group.add(obj);
+//                            }, function () {
+//                                //onProgress
+//                            }, function () {
+//                                //onError
+//                            });
+//                        });
                     }, false);
                     input_file.click();
                 }, false);
