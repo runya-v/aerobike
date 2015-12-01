@@ -12,22 +12,30 @@ MODELS.Pilot = function() {};
 MODELS.BikePelican = function() {
     THREE.Group.call(this);
     var _scope = this;
+    var _animation;
 
     function BikePelican() {
-        var loader = new THREE.ColladaLoader();
-        //loader.convertUpAxis = true;
-        loader.load( "./collada/bike_01.dae", function(collada) {
-            collada.scene.traverse(function(child) {
-                if (child instanceof THREE.SkinnedMesh) {
-                    var animation = new THREE.Animation(child, child.geometry.animation);
-                    animation.play();
-                    camera.lookAt( child.position );
-                }
-            });
-            _scope.add(collada.scene);
-
-        });
+        // Загрузка байка
+        loadModel("bike_01.png", "bike_01.dae");
+        // Загрузка рокетного двигателя
+        loadModel("mono_jet_01.png", "mono_jet_01.dae");
     } BikePelican();
+
+    function loadModel(texture_file, model_file) {
+        var obj_texture = new UTILS.TextureLoader(progress);
+        obj_texture.load("./textures/" + texture_file, function(texture) {
+            var loader = new THREE.ColladaLoader();
+            loader.convertUpAxis = true;
+            loader.load("./collada/" + model_file, function (collada) {
+                var model = collada.scene;
+                collada.scene.traverse(function (child) {
+                    model.position.y = 100;
+                    model.children[0].children[0].material = new THREE.MeshBasicMaterial({map: texture});
+                });
+                _scope.add(collada.scene);
+            });
+        });
+    }
 
     this.update = function() {
 
