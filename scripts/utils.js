@@ -80,7 +80,7 @@ UTILS.getGradientTexture = function(w, h) {
     //gradient.addColorStop(1, 'rgba(60,60,80,0.6)');
     //return gradient;
 
-    var canvas = document.createElement( 'canvas' );
+    var canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
 
