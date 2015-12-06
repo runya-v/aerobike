@@ -393,7 +393,7 @@ AEROBIKE.Main = function() {
     var _game;
 
     _renderer = new THREE.WebGLRenderer({antialias:true, alpha:false});
-    _renderer.setClearColor(0x6a9cfa);
+    _renderer.setClearColor(0xb3ccf9);
     _renderer.setPixelRatio(window.devicePixelRatio);
     _renderer.setSize(window.innerWidth, window.innerHeight);
     _renderer.gammaInput = true;
