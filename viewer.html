@@ -60,11 +60,11 @@
                 scene_container.appendChild(renderer.domElement);
 
                 camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
-                camera.position.z = 500;
+                camera.position.z = 5;
 
                 scene = new THREE.Scene();
                 group = new THREE.Group();
-                group.position.y = -100;
+                group.position.y = -1;
                 scene.add(group);
                 var light = new THREE.DirectionalLight(0xffffff, 1);
                 light.position.set(0, 1, 0).normalize();
@@ -89,7 +89,7 @@
                                     }
                                 });
                                 var model = collada.scene;
-                                model.position.y = 100;
+                                model.position.y = 1;
                                 model.children[0].children[0].material = new THREE.MeshBasicMaterial({map:texture});
                                 group.add(collada.scene);
 
@@ -162,7 +162,7 @@
             function onDocumentTouchMove(e) {
                 if (e.touches.length === 1) {
                     e.preventDefault();
-                    mouse_x = e.touches[ 0 ].pageX - window_half_x;
+                    mouse_x = e.touches[0].pageX - window_half_x;
                     target_rotation = target_rotation_on_mouse_down + (mouse_x - mouse_x_on_mouse_down) * 0.05;
                 }
             }
@@ -180,7 +180,7 @@
 
             function render() {
                 group.rotation.y = group.rotation.y += (target_rotation - group.rotation.y) * 0.05;
-                camera.position.y += (-mouse_y * Y_VIEW_PERCENT - camera.position.y);
+                camera.position.y += (-(mouse_y * 0.01) * Y_VIEW_PERCENT - camera.position.y) * 0.1;
                 camera.lookAt(scene.position);
                 renderer.render(scene, camera);
             }
