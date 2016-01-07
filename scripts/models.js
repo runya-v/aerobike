@@ -11,8 +11,13 @@ MODELS.Pilot = function() {};
 
 MODELS.BikePelican = function() {
     THREE.Group.call(this);
+
+    var DGRAD = 5;
+    var FLOUTIN_DISTANCE_PERCENT = 0.001;
+
     var _scope = this;
     var _animation;
+    var _alpha = 0;
 
     // Загрузка байка
     loadModel("bike_01.png", "bike_01.dae");
@@ -35,8 +40,12 @@ MODELS.BikePelican = function() {
         });
     }
 
-    this.update = function() {
-
+    this.update = function(dclock) {
+        if (_alpha > 360) {
+            _alpha = 0;
+        }
+        _scope.position.y += Math.sin(_alpha * (Math.PI / 180.0)) * FLOUTIN_DISTANCE_PERCENT;
+        _alpha += dclock * 200;
     };
 };
 MODELS.BikePelican.prototype = Object.create(THREE.Group.prototype);
@@ -92,13 +101,13 @@ MODELS.Cloud = function(min_x, min_y, min_z, max_x, max_y, max_z) {
     }
 
     this.update = function() {
-        //for (var i = 0; i < _fractions.length; ++i) {
-        //    var s = _fractions[i];
-        //    var k = 0.001;
-        //    s.position.x += (max_x * Math.random()) * (Math.random() < 0.5 ? -k:k);
-        //    s.position.y += (max_y * Math.random()) * (Math.random() < 0.5 ? -k:k);
-        //    //s.position.z += (max_z * 0.5 - max_z * Math.random()) * 0.005;
-        //}
+        for (var i = 0; i < _fractions.length; ++i) {
+            var s = _fractions[i];
+            var k = 0.001;
+            s.position.x += (max_x * Math.random()) * (Math.random() < 0.5 ? -k:k);
+            s.position.y += (max_y * Math.random()) * (Math.random() < 0.5 ? -k:k);
+            //s.position.z += (max_z * 0.5 - max_z * Math.random()) * 0.005;
+        }
     }
 };
 MODELS.Cloud.prototype = Object.create(THREE.Group.prototype);

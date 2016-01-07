@@ -14,7 +14,7 @@ AEROBIKE.Screen = function(scene, camera) {
     this.hide = function() {};
     this.show = function() {};
     this.resize = function() {};
-    this.update = function() {};
+    this.update = function(dclock) {};
 };
 
 
@@ -67,7 +67,7 @@ AEROBIKE.Start = function(on_garage, on_fast_game) {
         _scope.camera.updateProjectionMatrix();
     };
 
-    this.update = function() {
+    this.update = function(dclock) {
         for (var i = 0; i < _clouds.length; ++i) {
             _clouds[i].update();
         }
@@ -116,8 +116,8 @@ AEROBIKE.Garage = function(
     document.getElementById("garage_fast_game_img_bt").addEventListener("click", on_fast_game, false);
     document.getElementById("about_btn").addEventListener("click", on_about, false);
 
-    var bike = new MODELS.BikePelican();
-    _group.add(bike);
+    var _bike = new MODELS.BikePelican();
+    _group.add(_bike);
 
     var ground_texture = new UTILS.TextureLoader();
     ground_texture.load("./images/lavatile.jpg", function(texture) {
@@ -216,10 +216,11 @@ AEROBIKE.Garage = function(
         _scope.camera.updateProjectionMatrix();
     };
 
-    this.update = function() {
+    this.update = function(dclock) {
         _group.rotation.y = _group.rotation.y += (_target_rotation - _group.rotation.y) * 0.05;
         _scope.camera.position.y += (-(_mouse_y * 0.01) * Y_VIEW_PERCENT - _scope.camera.position.y) * 0.1;
         _scope.camera.lookAt(_scope.scene.position);
+        _bike.update(dclock);
     };
 };
 AEROBIKE.Garage.prototype = Object.create(AEROBIKE.Screen.prototype);
@@ -237,8 +238,8 @@ AEROBIKE.Settings = function(garage, on_return_settings) {
         garage.resize();
     };
 
-    this.update = function() {
-        garage.update();
+    this.update = function(dclock) {
+        garage.update(dclock);
     };
 
     this.hide = function() {
@@ -264,8 +265,8 @@ AEROBIKE.Rating = function(garage, on_return_rating) {
         garage.resize();
     };
 
-    this.update = function() {
-        garage.update();
+    this.update = function(dclock) {
+        garage.update(dclock);
     };
 
     this.hide = function() {
@@ -291,8 +292,8 @@ AEROBIKE.Shop = function(garage, on_return_shop) {
         garage.resize();
     };
 
-    this.update = function() {
-        garage.update();
+    this.update = function(dclock) {
+        garage.update(dclock);
     };
 
     this.hide = function() {
@@ -318,8 +319,8 @@ AEROBIKE.About = function(garage, on_return_about) {
         garage.resize();
     };
 
-    this.update = function() {
-        garage.update();
+    this.update = function(dclock) {
+        garage.update(dclock);
     };
 
     this.hide = function() {
@@ -345,8 +346,8 @@ AEROBIKE.ChoocePartner = function(garage, on_return_chooce_partner) {
         garage.resize();
     };
 
-    this.update = function() {
-        garage.update();
+    this.update = function(dclock) {
+        garage.update(dclock);
     };
 
     this.hide = function() {
@@ -378,7 +379,7 @@ AEROBIKE.Game = function(on_return_game) {
     this.resize = function() {
     };
 
-    this.update = function() {
+    this.update = function(dclock) {
     };
 
     this.hide = function() {
@@ -405,6 +406,8 @@ AEROBIKE.Main = function() {
     var _chooce_partner;
     var _about;
     var _game;
+
+    var _clock = new THREE.Clock();
 
     _renderer = new THREE.WebGLRenderer({antialias:true, alpha:false});
     _renderer.setClearColor(0xb3ccf9);
@@ -526,7 +529,7 @@ AEROBIKE.Main = function() {
 
     // Main methods
     function render() {
-        _screen.update();
+        _screen.update(_clock.getDelta());
         _renderer.render(_screen.scene, _screen.camera);
     }
 
