@@ -55,18 +55,18 @@ MODELS.Cloud = function(min_x, min_y, min_z, max_x, max_y, max_z) {
     var _diagonal = diagonal();
 
     var _loader = new THREE.TextureLoader();
-    _loader.load("textures/cloud_fraction_circle.png", function(texture) {
-    //_loader.load("textures/cloud_fraction_light.png", function(texture) {
+    _loader.load("textures/cloud256.png", function(texture) {
         var amount = getRandValue(MIN_NUM_FRACTIONS, MAX_NUM_FRACTIONS);
         for (var i = 0; i < amount; ++i) {
-            var s = addFraction(new THREE.SpriteMaterial({map:texture, color:0xffffff, fog:true}));
+            var s = addFraction(new THREE.SpriteMaterial({
+                map:texture, color:0xffffff, fog:true, rotation:(360.0 * Math.random()) * (Math.PI / 180.0)
+            }));
             _fractions[i] = s;
             _scope.add(s);
         }
     });
 
     function addFraction(material) {
-        //material.color.setRGB(0.1 + 0.9 * Math.random(), 0.8 + 0.2 * Math.random(), 1);
         var s = new THREE.Sprite(material);
         s.position.set(getCoordinate(max_x), getCoordinate(max_y), getCoordinate(max_z));
         s.position.normalize();

@@ -23,27 +23,20 @@ AEROBIKE.Start = function(on_garage, on_fast_game) {
         new THREE.Scene(),
         new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
 
-    var X_VIEW_PERCENT = 0.5;
-    var Y_VIEW_PERCENT = 0.2;
-    var X_SCENE_ROTATION = 0.0005;
-    var BASE_CAMERA_POS_PERCENT = 0.1;
+    var X_SCENE_ROTATION = 0.0003;
 
     var _scope = this;
     var _display = new UTILS.Display(document.getElementById("start_screen"));
     var _group = new THREE.Group();
 
-    var _mouse_x = 0;
-    var _mouse_y = 0;
     var _window_half_x = window.innerWidth * 0.5;
     var _window_half_y = window.innerHeight * 0.5;
-    var _base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
 
     document.getElementById("start_garage_img_bt").addEventListener("click", on_garage, false);
     document.getElementById("start_fast_game_img_bt").addEventListener("click", on_fast_game, false);
 
     _scope.camera.position.z = 400;
     _scope.scene.add(new THREE.AmbientLight(0xffffff));
-    //_scope.scene.fog = new THREE.FogExp2(0x000000, 0.001);
     _scope.scene.add(_group);
 
     console.log("start");
@@ -65,21 +58,11 @@ AEROBIKE.Start = function(on_garage, on_fast_game) {
     _group.add(_clouds[3]);
     _group.add(_clouds[4]);
 
-    document.addEventListener('mousemove', function(e) {
-        _mouse_x = (e.clientX - _window_half_x);
-        _mouse_y = (e.clientY - _window_half_y - _base_y_cam_pos);
-    }, false);
-
     this.hide = function() {
         _display.hide();
     };
 
     this.resize = function() {
-        _mouse_x = 0;
-        _mouse_y = 0;
-        _window_half_x  = window.innerWidth * 0.5;
-        _window_half_y  = window.innerHeight * 0.5;
-        _base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
         _scope.camera.aspect  = window.innerWidth / window.innerHeight;
         _scope.camera.updateProjectionMatrix();
     };
@@ -89,8 +72,6 @@ AEROBIKE.Start = function(on_garage, on_fast_game) {
             _clouds[i].update();
         }
         _group.rotation.y -= X_SCENE_ROTATION;
-        _scope.camera.position.x += (_mouse_x * X_VIEW_PERCENT - _scope.camera.position.x);
-        _scope.camera.position.y += (-_mouse_y * Y_VIEW_PERCENT - _scope.camera.position.y);
         _scope.camera.lookAt(_scope.scene.position);
     };
 };

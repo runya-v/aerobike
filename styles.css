@@ -23,14 +23,18 @@ html,body {
 }
 
 #scene_container {
+	position: absolute;
 	width: 100%;
 	height: 100%;
 	touch-action:none;
 }
 
 #start_screen {
+	position: absolute;
 	height: 100%;
 	width: 100%;
+	outline: 1px solid rgba(255, 255, 255, 0.75);
+	outline-offset: -10px;
 }
 
 #start_image_box {
@@ -45,19 +49,24 @@ html,body {
 
 #start_menu {
 	position:relative;
-	top: 25%;
+	top: 30%;
 	display: table;
 	margin: 0 auto;
 	text-align: center;
+	vertical-align: middle;
+
+	background-color: rgba(0, 0, 0, 0.1);
+	outline: 1px solid rgba(255, 255, 255, 0.75);
+	cursor: pointer;
 }
 
- #garage_screen {
-	 position: absolute;
-	 background: transparent;
-	 width: 100%;
-	 height: 100%;
-	 text-align: center;
- }
+#garage_screen {
+	position: absolute;
+	background: transparent;
+	width: 100%;
+	height: 100%;
+	text-align: center;
+}
 
 .fast_game_img_bt {
 	display:inline-block;
