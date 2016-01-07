@@ -21,76 +21,21 @@
 		<div id="scene_container"/>
 		<!-- Progress -->
 		<div id="progress">
-			<div id="progress_bar" class="shadow">
-				<style>
-					#progress_bar {
-						position: absolute;
-						background: transparent;
-						top :50%;
-						width: 100%;
-						height: 100%;
-						text-align: center;
-					}
-				</style>
+			<div class="progress_bar" class="shadow">
 				<div id="bar" class="shadow">
 				</div>
 			</div>
 		</div>
 		<!-- Start -->
 		<div id="start_screen">
-			<div id="start_image_box">
-				<style>
-					#start_image_box {
-						position: absolute;
-						background: transparent;
-						top: 10%;
-						width: 100%;
-						text-align: center;
-					}
-					#start_img {
-						mix-width: 50%;
-						mix-height: 50%;
-						max-width: 50%;
-						max-height: 50%;
-						text-align: center;
-					}
-				</style>
-				<img id="start_img" src="images/big_logo.png">
-			</div>
+			<div id="start_image_box"></div>
 			<div id="start_menu">
-				<style>
-					#start_menu {
-						position: absolute;
-						width: 100%;
-						bottom: 10%;
-						text-align: center;
-					}
-				</style>
-				<button id="login_btn">
-					<img id="login_img" src="images/icons/login.png">
-				</button>
-				<button id="login_vk_btn">
-					<img id="login_vk_img" src="images/icons/login_vk.png">
-				</button>
-				<button id="login_fb_btn">
-					<img id="login_fb_img" src="images/icons/login_fb.png">
-				</button>
-				<button id="without_login_btn">
-					<img id="without_login_img" src="images/icons/without_login.png">
-				</button>
+				<div class="garage_img_bt" id="start_garage_img_bt"></div>
+				<div class="fast_game_img_bt" id="start_fast_game_img_bt"></div>
 			</div>
 		</div>
 		<!-- Garage -->
 		<div id="garage_screen" hidden>
-			<style>
-				#garage_screen {
-					position: absolute;
-					background: transparent;
-					width: 100%;
-					height: 100%;
-					text-align: center;
-				}
-			</style>
 			<div id="bike_info">
 				<style>
 					#bike_info {
@@ -114,7 +59,7 @@
 						height: 256px;
 					}
 				</style>
-				<img id="avatar_img" src="images/default_avatar.png">
+				<img id="avatar_img" src="images/big_logo.png">
 			</div>
 			<div id="user_level">1</div>
 			<div id="user_stars">10</div>
@@ -165,9 +110,7 @@
 				<button id="chooce_partner_btn">
 					<img id="chooce_partner_img" src="images/icons/chooce_partner.png">
 				</button>
-				<button id="fast_game_btn">
-					<img id="fast_game_img" src="images/icons/fast_game.png">
-				</button>
+				<div class="fast_game_img_bt" id="garage_fast_game_img_bt"></div>
 				<button id="about_btn">
 					<img id="about_img" src="images/icons/about.png">
 				</button>
@@ -291,9 +234,7 @@
 				<button id="right_game_btn">
 					<img id="right_game_img" src="images/icons/right.png">
 				</button>
-				<button id="return_game_btn">
-					<img id="return_game_img" src="images/icons/return.png">
-				</button>
+				<div class="garage_img_bt" id="game_garage_img_bt"></div>
 			</div>
 		</div>
 		<script src="scripts/main.js"></script>

@@ -27,7 +27,7 @@ MODELS.BikePelican = function() {
             loader.load("./collada/" + model_file, function(collada) {
                 var model = collada.scene;
                 collada.scene.traverse(function(child) {
-                    model.position.y = 100;
+                    model.position.y = 1;
                     model.children[0].children[0].material = new THREE.MeshBasicMaterial({map:texture});
                 });
                 _scope.add(collada.scene);
