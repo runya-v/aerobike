@@ -18,7 +18,7 @@ AEROBIKE.Screen = function(scene, camera) {
 };
 
 
-AEROBIKE.Start = function(on_without_login, on_login, on_vk_login, on_fb_login) {
+AEROBIKE.Start = function(on_garage, on_fast_game) {
     AEROBIKE.Screen.call(this,
         new THREE.Scene(),
         new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
@@ -38,10 +38,8 @@ AEROBIKE.Start = function(on_without_login, on_login, on_vk_login, on_fb_login) 
     var _window_half_y = window.innerHeight * 0.5;
     var _base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
 
-    document.getElementById("login_btn").addEventListener("click", on_login, false);
-    document.getElementById("login_vk_btn").addEventListener("click", on_vk_login, false);
-    document.getElementById("login_fb_btn").addEventListener("click", on_fb_login, false);
-    document.getElementById("without_login_btn").addEventListener("click", on_without_login, false);
+    document.getElementById("start_garage_img_bt").addEventListener("click", on_garage, false);
+    document.getElementById("start_fast_game_img_bt").addEventListener("click", on_fast_game, false);
 
     _scope.camera.position.z = 400;
     _scope.scene.add(new THREE.AmbientLight(0xffffff));
@@ -110,18 +108,22 @@ AEROBIKE.Garage = function(
     AEROBIKE.Screen.call(this,
         new THREE.Scene(),
         new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
+    var _scope = this;
 
     var X_VIEW_PERCENT = 0.9;
     var Y_VIEW_PERCENT = 0.7;
     var X_SCENE_ROTATION = 0.001;
     var BASE_CAMERA_POS_PERCENT = 0.15;
 
-    var _scope = this;
     var _mouse_x = 0;
+    var _mouse_x_on_mouse_down = 0;
+    var _target_rotation = 0;
+    var _target_rotation_on_mouse_down = 0;
     var _mouse_y = 0;
+    var _base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
+
     var _window_half_x = window.innerWidth * 0.5;
     var _window_half_y = window.innerHeight * 0.5;
-    var _base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
 
     var _display = new UTILS.Display(document.getElementById("garage_screen"));
     var _group = new THREE.Group();
@@ -130,7 +132,7 @@ AEROBIKE.Garage = function(
     document.getElementById("rating_btn").addEventListener("click", on_rating, false);
     document.getElementById("shop_btn").addEventListener("click", on_shop, false);
     document.getElementById("chooce_partner_btn").addEventListener("click", on_chooce_partner, false);
-    document.getElementById("fast_game_btn").addEventListener("click", on_fast_game, false);
+    document.getElementById("garage_fast_game_img_bt").addEventListener("click", on_fast_game, false);
     document.getElementById("about_btn").addEventListener("click", on_about, false);
 
     var bike = new MODELS.BikePelican();
@@ -138,7 +140,7 @@ AEROBIKE.Garage = function(
 
     var ground_texture = new UTILS.TextureLoader();
     ground_texture.load("./images/lavatile.jpg", function(texture) {
-        var ground_geometry = new THREE.PlaneBufferGeometry(1000, 1000);
+        var ground_geometry = new THREE.PlaneBufferGeometry(100, 100);
         ground_geometry.rotateX(-Math.PI / 2);
         var ground_material = new THREE.MeshPhongMaterial({
             map:texture, bumpMap:texture, bumpScale:2, color:0x00ff00,
@@ -147,7 +149,7 @@ AEROBIKE.Garage = function(
         var plane = new THREE.Mesh(ground_geometry, ground_material);
         _group.add(plane);
     });
-    _group.position.y = -150;
+    _group.position.y = -1.5;
 
     _scope.scene.add(new THREE.AmbientLight(0xffffff));
     var directionalLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -160,7 +162,7 @@ AEROBIKE.Garage = function(
     //_scene.add(particle_light);
     _scope.scene.add(_group);
 
-    _scope.camera.position.z = 400;
+    _scope.camera.position.z = 4;
 
     document.getElementById("prev_bike_btn").addEventListener("click", function() {
 
@@ -170,18 +172,52 @@ AEROBIKE.Garage = function(
 
     }, false);
 
-    document.addEventListener('mousemove', function(e) {
-        _mouse_x = (e.clientX - _window_half_x);
+    document.addEventListener('mousedown', onDocumentMouseDown, false);
+    document.addEventListener('touchstart', onDocumentTouchStart, false);
+    document.addEventListener('touchmove', onDocumentTouchMove, false);
+
+    function onDocumentMouseDown(e) {
+        e.preventDefault();
+        document.addEventListener('mousemove', onDocumentMouseMove, false);
+        document.addEventListener('mouseup', onDocumentMouseUp, false);
+        document.addEventListener('mouseout', onDocumentMouseOut, false);
+        _mouse_x_on_mouse_down = e.clientX - _window_half_x;
+        _target_rotation_on_mouse_down = _target_rotation;
+    }
+
+    function onDocumentMouseMove(e) {
+        _mouse_x = e.clientX - _window_half_x;
         _mouse_y = (e.clientY - _window_half_y - _base_y_cam_pos);
-    }, false);
+        _target_rotation = _target_rotation_on_mouse_down + (_mouse_x - _mouse_x_on_mouse_down) * 0.02;
+    }
 
-    document.addEventListener('mousedown', function(e) {
+    function onDocumentMouseUp(e) {
+        document.removeEventListener('mousemove', onDocumentMouseMove, false);
+        document.removeEventListener('mouseup', onDocumentMouseUp, false);
+        document.removeEventListener('mouseout', onDocumentMouseOut, false);
+    }
 
-    }, false);
+    function onDocumentMouseOut(e) {
+        document.removeEventListener('mousemove', onDocumentMouseMove, false);
+        document.removeEventListener('mouseup', onDocumentMouseUp, false);
+        document.removeEventListener('mouseout', onDocumentMouseOut, false);
+    }
 
-    document.addEventListener('mouseup', function(e) {
+    function onDocumentTouchStart(e) {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+            _mouse_x_on_mouse_down = e.touches[0].pageX - _window_half_x;
+            _target_rotation_on_mouse_down = _target_rotation;
+        }
+    }
 
-    }, false);
+    function onDocumentTouchMove(e) {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+            _mouse_x = e.touches[0].pageX - _window_half_x;
+            _target_rotation = _target_rotation_on_mouse_down + (_mouse_x - _mouse_x_on_mouse_down) * 0.05;
+        }
+    }
 
     this.hide = function() {
         _display.hide();
@@ -192,19 +228,16 @@ AEROBIKE.Garage = function(
     };
 
     this.resize = function() {
-        _mouse_x = 0;
         _mouse_y = 0;
-        _window_half_x  = window.innerWidth * 0.5;
         _window_half_y  = window.innerHeight * 0.5;
         _base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
-        _scope.camera.aspect  = window.innerWidth / window.innerHeight;
+        _scope.camera.aspect = window.innerWidth / window.innerHeight;
         _scope.camera.updateProjectionMatrix();
     };
 
     this.update = function() {
-        _group.rotation.y -= X_SCENE_ROTATION;
-        _scope.camera.position.x += (_mouse_x * X_VIEW_PERCENT - _scope.camera.position.x);
-        _scope.camera.position.y += (-_mouse_y * Y_VIEW_PERCENT - _scope.camera.position.y);
+        _group.rotation.y = _group.rotation.y += (_target_rotation - _group.rotation.y) * 0.05;
+        _scope.camera.position.y += (-(_mouse_y * 0.01) * Y_VIEW_PERCENT - _scope.camera.position.y) * 0.1;
         _scope.camera.lookAt(_scope.scene.position);
     };
 };
@@ -354,7 +387,7 @@ AEROBIKE.Game = function(on_return_game) {
 
     var _display = new UTILS.Display(document.getElementById("game_screen"));
 
-    document.getElementById("return_game_btn").addEventListener("click", on_return_game, false);
+    document.getElementById("game_garage_img_bt").addEventListener("click", on_return_game, false);
 
     document.getElementById("up_game_btn").addEventListener("click", function() {}, false);
     document.getElementById("down_game_btn").addEventListener("click", function() {}, false);

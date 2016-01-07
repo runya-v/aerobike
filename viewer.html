@@ -44,6 +44,7 @@
             var scene;
             var camera;
             var controls;
+            var clock = new THREE.Clock();
 
             function main() {
                 renderer = new THREE.WebGLRenderer({antialias: true, alpha: false});
@@ -72,26 +73,33 @@
                     var input_file = document.getElementById('input_file');
                     input_file.addEventListener("change", function(e) {
                         var files = this.files;
-                        var progress = new UTILS.ProgressManager();
-                        var obj_texture = new UTILS.TextureLoader(progress);
-                        obj_texture.load("./images/test.jpg", function(texture) {
-                            var loader = new THREE.ColladaLoader();
-                            //loader.convertUpAxis = true;
-                            loader.load("./collada/" + files[0].name, function (collada) {
-                                collada.scene.traverse(function (child) {
-                                    if (child instanceof THREE.SkinnedMesh) {
-                                        var animation = new THREE.Animation(child, child.geometry.animation);
-                                        animation.play();
-                                        camera.lookAt(child.position);
-                                    }
-                                });
-                                var model = collada.scene;
-                                model.position.y = 100;
-                                model.children[0].children[0].material = new THREE.MeshBasicMaterial({map:texture});
-                                group.add(collada.scene);
-
+                        var loader = new THREE.ColladaLoader();
+                        loader.load("./collada/" + files[0].name, function(collada) {
+                            collada.scene.traverse(function(child) {
+                                if (child instanceof THREE.SkinnedMesh) {
+                                    var animation = new THREE.Animation(child, child.geometry.animation);
+                                    animation.play();
+                                    camera.lookAt(child.position);
+                                }
                             });
+                            scene.add(collada.scene);
                         });
+
+//                        var loader = new THREE.ColladaLoader();
+//                        loader.load("./collada/" + files[0].name, function (collada) {
+//                            collada.scene.traverse(function (child) {
+//                                if (child instanceof THREE.SkinnedMesh) {
+//                                    var animation = new THREE.Animation(child, child.geometry.animation);
+//                                    animation.play();
+//                                    camera.lookAt(child.position);
+//                                }
+//                            });
+////                            var model = collada.scene;
+////                            model.position.y = 1;
+////                            model.children[0].children[0].material = new THREE.MeshBasicMaterial({map:texture});
+//                            group.add(collada.scene);
+//                        });
+
 //                        obj_texture.load("./images/test.jpg", function(texture) {
 //                            var obj_loader = new THREE.OBJLoader(progress);
 //                            obj_loader.load("./objs/" + files[0].name, function(obj) {
@@ -121,8 +129,19 @@
                 window.addEventListener('resize', onWindowResize, false);
             } main();
 
-            function onMouseDown(e) {
-                is_mouse_down = true;
+            function onDocumentMouseDown(e) {
+                e.preventDefault();
+                document.addEventListener('mousemove', onDocumentMouseMove, false);
+                document.addEventListener('mouseup', onDocumentMouseUp, false);
+                document.addEventListener('mouseout', onDocumentMouseOut, false);
+                mouse_x_on_mouse_down = e.clientX - window_half_x;
+                target_rotation_on_mouse_down = target_rotation;
+            }
+
+            function onDocumentMouseMove(e) {
+                mouse_x = e.clientX - window_half_x;
+                mouse_y = (e.clientY - window_half_y - base_y_cam_pos);
+                target_rotation = target_rotation_on_mouse_down + (mouse_x - mouse_x_on_mouse_down) * 0.02;
             }
 
             function onMouseUp(e) {
@@ -160,6 +179,7 @@
 
             function animate() {
                 requestAnimationFrame(animate);
+                THREE.AnimationHandler.update(clock.getDelta());
                 render();
             } animate();
         </script>
