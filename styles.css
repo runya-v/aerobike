@@ -40,7 +40,6 @@ html,body {
 #start_image_box {
 	position:relative;
 	top: 25%;
-	display: table;
 	margin: 0 auto;
 	max-width: 50%;
 	max-height: 50%;
@@ -50,12 +49,11 @@ html,body {
 #start_menu {
 	position:relative;
 	top: 30%;
-	display: table;
+	width: 90%;
 	margin: 0 auto;
 	text-align: center;
 	vertical-align: middle;
-
-	background-color: rgba(0, 0, 0, 0.1);
+	background-color: rgba(0, 0, 0, 0.2);
 	outline: 1px solid rgba(255, 255, 255, 0.75);
 	cursor: pointer;
 }
@@ -66,12 +64,28 @@ html,body {
 	width: 100%;
 	height: 100%;
 	text-align: center;
+	outline: 1px solid rgba(255, 255, 255, 0.75);
+	outline-offset: -10px;
+}
+
+#garage_menu {
+	position: relative;
+	top: 80%;
+	width: 90%;
+	margin: 0 auto;
+	text-align: center;
+	vertical-align: middle;
+	background-color: rgba(0, 0, 0, 0.2);
+	outline: 1px solid rgba(255, 255, 255, 0.75);
+	cursor: pointer;
 }
 
 .fast_game_img_bt {
 	display:inline-block;
-	max-width: 25%;
-	max-height: 25%;
+	min-width: 50px;
+	min-height: 50px;
+	width: 5%;
+	height: 5%;
 	content: url('images/icons/fast_game_bt.png');
 }
 
@@ -85,8 +99,10 @@ html,body {
 
 .garage_img_bt {
 	display:inline-block;
-	max-width: 25%;
-	max-height: 25%;
+	min-width: 50px;
+	min-height: 50px;
+	width: 5%;
+	height: 5%;
 	content: url('images/icons/garage_bt.png');
 }
 
