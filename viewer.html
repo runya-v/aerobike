@@ -13,6 +13,7 @@
         <script src="scripts/utils.js"></script>
     </head>
     <body>
+        <div id="scene_container"/>
         <div id="viewer_menu">
             <style>
                 #viewer_menu {
@@ -23,7 +24,7 @@
                     text-align: center;
                 }
             </style>
-            <button id="model_load_btn">Загрузить модель</button>
+            <button class="txt_button" id="model_load_btn">Загрузить модель</button>
             <input id="input_file" type="file" name="file_name" style='position:absolute;visibility:hidden;'/>
         </div>
         <script>
@@ -57,7 +58,8 @@
                 renderer.gammaInput = true;
                 renderer.gammaOutput = true;
 
-                var scene_container = new UTILS.CreateContainer("scene_container");
+                var scene_container = document.getElementById("scene_container");
+                //var scene_container = new UTILS.CreateContainer("scene_container");
                 scene_container.appendChild(renderer.domElement);
 
                 camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
@@ -86,40 +88,6 @@
                             });
                             group.add(collada.scene);
                         });
-
-//                        var loader = new THREE.ColladaLoader();
-//                        loader.load("./collada/" + files[0].name, function (collada) {
-//                            collada.scene.traverse(function (child) {
-//                                if (child instanceof THREE.SkinnedMesh) {
-//                                    var animation = new THREE.Animation(child, child.geometry.animation);
-//                                    animation.play();
-//                                    camera.lookAt(child.position);
-//                                }
-//                            });
-////                            var model = collada.scene;
-////                            model.position.y = 1;
-////                            model.children[0].children[0].material = new THREE.MeshBasicMaterial({map:texture});
-//                            group.add(collada.scene);
-//                        });
-
-//                        obj_texture.load("./images/test.jpg", function(texture) {
-//                            var obj_loader = new THREE.OBJLoader(progress);
-//                            obj_loader.load("./objs/" + files[0].name, function(obj) {
-//                                obj.position.y = 100;
-//                                obj.traverse(function (child) {
-//                                    if (child instanceof THREE.Mesh) {
-//                                        child.material = new THREE.MeshPhongMaterial({
-//                                            map:texture, color:0xffffff, shininess:50, shading:THREE.SmoothShading
-//                                        });
-//                                    }
-//                                });
-//                                group.add(obj);
-//                            }, function () {
-//                                //onProgress
-//                            }, function () {
-//                                //onError
-//                            });
-//                        });
                     }, false);
                     input_file.click();
                 }, false);
