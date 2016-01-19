@@ -376,6 +376,8 @@ AEROBIKE.Game = function(on_return_game) {
     document.getElementById("left_game_btn").addEventListener("click", function() {}, false);
     document.getElementById("right_game_btn").addEventListener("click", function() {}, false);
 
+    // Загрузка ландшафта
+
     this.resize = function() {
     };
 
@@ -397,16 +399,6 @@ AEROBIKE.Main = function() {
     var _scope = this;
     var _renderer;
 
-    var _screen;
-    var _start;
-    var _garage;
-    var _settings;
-    var _rating;
-    var _shop;
-    var _chooce_partner;
-    var _about;
-    var _game;
-
     var _clock = new THREE.Clock();
 
     _renderer = new THREE.WebGLRenderer({antialias:true, alpha:false});
@@ -419,8 +411,26 @@ AEROBIKE.Main = function() {
     var scene_container = document.getElementById("scene_container");
     scene_container.appendChild(_renderer.domElement);
 
-    _start = new AEROBIKE.Start(toSimpleGarageScreen);
+    var _screen;
+    var _start = new AEROBIKE.Start(toSimpleGarageScreen);
+    var _garage = new AEROBIKE.Garage(
+        onSettings,
+        onRating,
+        onShop,
+        onChoocePartner,
+        onFastGame,
+        onAbout);
+    var _settings = new AEROBIKE.Settings(_garage, onReturnSettings);
+    var _rating = new AEROBIKE.Rating(_garage, onReturnRating);
+    var _shop = new AEROBIKE.Shop(_garage, onReturnShop);
+    var _chooce_partner = new AEROBIKE.ChoocePartner(_garage, onReturnChoocePartner);
+    var _about = new AEROBIKE.About(_garage, onReturnAbout);
+    var _game = new AEROBIKE.Game(onReturnGame);
     _screen = _start;
+
+// TODO: временное решение
+    _start.hide();
+    onFastGame();
 
     window.addEventListener('resize', function() {
         _screen.resize();
@@ -429,20 +439,6 @@ AEROBIKE.Main = function() {
     }, false);
 
     function toSimpleGarageScreen(e) {
-        _garage = new AEROBIKE.Garage(
-            onSettings,
-            onRating,
-            onShop,
-            onChoocePartner,
-            onFastGame,
-            onAbout);
-        _settings = new AEROBIKE.Settings(_garage, onReturnSettings);
-        _rating = new AEROBIKE.Rating(_garage, onReturnRating);
-        _shop = new AEROBIKE.Shop(_garage, onReturnShop);
-        _chooce_partner = new AEROBIKE.ChoocePartner(_garage, onReturnChoocePartner);
-        _about = new AEROBIKE.About(_garage, onReturnAbout);
-        _game = new AEROBIKE.Game(onReturnGame);
-
         _start.hide();
         _garage.show();
         _screen = _garage;

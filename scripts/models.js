@@ -41,11 +41,11 @@ MODELS.BikePelican = function() {
     }
 
     this.update = function(dclock) {
-        if (_alpha > 360) {
-            _alpha = 0;
-        }
-        _scope.position.y += Math.sin(_alpha * (Math.PI / 180.0)) * FLOUTIN_DISTANCE_PERCENT;
-        _alpha += dclock * 200;
+        //if (_alpha > 360) {
+        //    _alpha = 0;
+        //}
+        //_scope.position.y += Math.sin(_alpha * (Math.PI / 180.0)) * FLOUTIN_DISTANCE_PERCENT;
+        //_alpha += dclock * 200;
     };
 };
 MODELS.BikePelican.prototype = Object.create(THREE.Group.prototype);
