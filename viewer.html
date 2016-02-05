@@ -25,7 +25,7 @@
                 }
             </style>
             <button class="txt_button" id="model_load_btn">Загрузить модель</button>
-            <input id="input_file" type="file" name="file_name" style='position:absolute;visibility:hidden;'/>
+            <input id="input_file" type="file" name="file_name" style='position:absolute;visibility:hidden;' multiple/>
         </div>
         <script>
             var scope = this;
@@ -52,7 +52,7 @@
 
             function main() {
                 renderer = new THREE.WebGLRenderer({antialias: true, alpha: false});
-                renderer.setClearColor(0x6a9cfa);
+                renderer.setClearColor(0xFFA500);
                 renderer.setPixelRatio(window.devicePixelRatio);
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 renderer.gammaInput = true;
@@ -77,17 +77,19 @@
                     var input_file = document.getElementById('input_file');
                     input_file.addEventListener("change", function(e) {
                         var files = this.files;
-                        var loader = new THREE.ColladaLoader();
-                        loader.load("./collada/" + files[0].name, function(collada) {
-                            collada.scene.traverse(function(child) {
-                                if (child instanceof THREE.SkinnedMesh) {
-                                    var animation = new THREE.Animation(child, child.geometry.animation);
-                                    animation.play();
-                                    camera.lookAt(child.position);
-                                }
+                        for (var file in files) {
+                            var loader = new THREE.ColladaLoader();
+                            loader.load("./collada/" + files[file].name, function (collada) {
+                                collada.scene.traverse(function (child) {
+                                    if (child instanceof THREE.SkinnedMesh) {
+                                        var animation = new THREE.Animation(child, child.geometry.animation);
+                                        animation.play();
+                                        camera.lookAt(child.position);
+                                    }
+                                });
+                                group.add(collada.scene);
                             });
-                            group.add(collada.scene);
-                        });
+                        }
                     }, false);
                     input_file.click();
                 }, false);

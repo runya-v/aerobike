@@ -366,7 +366,7 @@ AEROBIKE.Game = function(on_return_game) {
     AEROBIKE.Screen.call(this,
         new THREE.Scene(),
         new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
-
+    var _scope = this;
     var _display = new UTILS.Display(document.getElementById("game_screen"));
 
     document.getElementById("game_garage_img_bt").addEventListener("click", on_return_game, false);
@@ -378,10 +378,93 @@ AEROBIKE.Game = function(on_return_game) {
 
     // Загрузка ландшафта
 
+
+    var _group = new THREE.Group();
+
+    _group.add(new MODELS.Terrain(50, 50, 100, 100));
+    _group.position.y = -5;
+    _scope.scene.add(_group);
+
+    _scope.scene.add(new THREE.AmbientLight(0xffffff));
+    _scope.scene.add(new THREE.SpotLight(0xffffff));
+
+    //_scope.camera.position.y = 1;
+    _scope.camera.position.z = 30;
+
+    var X_VIEW_PERCENT = 0.9;
+    var Y_VIEW_PERCENT = 0.7;
+    var X_SCENE_ROTATION = 0.001;
+    var BASE_CAMERA_POS_PERCENT = 0.15;
+
+    var _mouse_x = 0;
+    var _mouse_x_on_mouse_down = 0;
+    var _target_rotation = 0;
+    var _target_rotation_on_mouse_down = 0;
+    var _mouse_y = 0;
+    var _base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
+
+    var _window_half_x = window.innerWidth * 0.5;
+    var _window_half_y = window.innerHeight * 0.5;
+
+    document.addEventListener('mousedown', onDocumentMouseDown, false);
+    document.addEventListener('touchstart', onDocumentTouchStart, false);
+    document.addEventListener('touchmove', onDocumentTouchMove, false);
+
+    function onDocumentMouseDown(e) {
+        e.preventDefault();
+        document.addEventListener('mousemove', onDocumentMouseMove, false);
+        document.addEventListener('mouseup', onDocumentMouseUp, false);
+        document.addEventListener('mouseout', onDocumentMouseOut, false);
+        _mouse_x_on_mouse_down = e.clientX - _window_half_x;
+        _target_rotation_on_mouse_down = _target_rotation;
+    }
+
+    function onDocumentMouseMove(e) {
+        _mouse_x = e.clientX - _window_half_x;
+        _mouse_y = (e.clientY - _window_half_y - _base_y_cam_pos);
+        _target_rotation = _target_rotation_on_mouse_down + (_mouse_x - _mouse_x_on_mouse_down) * 0.02;
+    }
+
+    function onDocumentMouseUp(e) {
+        document.removeEventListener('mousemove', onDocumentMouseMove, false);
+        document.removeEventListener('mouseup', onDocumentMouseUp, false);
+        document.removeEventListener('mouseout', onDocumentMouseOut, false);
+    }
+
+    function onDocumentMouseOut(e) {
+        document.removeEventListener('mousemove', onDocumentMouseMove, false);
+        document.removeEventListener('mouseup', onDocumentMouseUp, false);
+        document.removeEventListener('mouseout', onDocumentMouseOut, false);
+    }
+
+    function onDocumentTouchStart(e) {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+            _mouse_x_on_mouse_down = e.touches[0].pageX - _window_half_x;
+            _target_rotation_on_mouse_down = _target_rotation;
+        }
+    }
+
+    function onDocumentTouchMove(e) {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+            _mouse_x = e.touches[0].pageX - _window_half_x;
+            _target_rotation = _target_rotation_on_mouse_down + (_mouse_x - _mouse_x_on_mouse_down) * 0.05;
+        }
+    }
+
     this.resize = function() {
+        _mouse_y = 0;
+        _window_half_y  = window.innerHeight * 0.5;
+        _base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
+        _scope.camera.aspect = window.innerWidth / window.innerHeight;
+        _scope.camera.updateProjectionMatrix();
     };
 
     this.update = function(dclock) {
+        _group.rotation.y = _group.rotation.y += (_target_rotation - _group.rotation.y) * 0.05;
+        _scope.camera.position.y += (-(_mouse_y * 0.01) * Y_VIEW_PERCENT - _scope.camera.position.y) * 0.1;
+        _scope.camera.lookAt(_scope.scene.position);
     };
 
     this.hide = function() {
