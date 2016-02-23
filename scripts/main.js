@@ -378,15 +378,19 @@ AEROBIKE.Game = function(on_return_game) {
 
     // Загрузка ландшафта
 
-
     var _group = new THREE.Group();
 
-    _group.add(new MODELS.Terrain(50, 50, 100, 100));
+    _group.add(new MODELS.Terrain(50, 50, 30, 30));
     _group.position.y = -5;
     _scope.scene.add(_group);
 
     _scope.scene.add(new THREE.AmbientLight(0xffffff));
-    _scope.scene.add(new THREE.SpotLight(0xffffff));
+    var directionalLight = new THREE.DirectionalLight(0xffffff, 10);
+    directionalLight.position.set(0, 1, 0).normalize();
+    _scope.scene.add(directionalLight);
+
+    //_scope.scene.add(new THREE.AmbientLight(0xffffff));
+    //_scope.scene.add(new THREE.SpotLight(0xffffff));
 
     //_scope.camera.position.y = 1;
     _scope.camera.position.z = 30;
