@@ -117,21 +117,21 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
     THREE.Group.call(this);
     var _scope = this;
 
-    function generateGrid(sw, sh, x, z) {
+    function generateGrid(sw, sh, x, z, swidth, sheight) {
         var geometry = new THREE.Geometry();
 
         // Генерация первого ряда точек
-        for (var i = 0; i <= segments_width; i++) {
+        for (var i = 0; i <= swidth; i++) {
             geometry.vertices.push(new THREE.Vector3(x + i * sw, 0, z));
         }
 
         // Генерация верхних рядов точек и описание поверхностей их индексами по секторам
         var id_0 = 0;
-        for (var j = 1; j <= segments_height; j++) {
+        for (var j = 1; j <= sheight; j++) {
             // Генерация первой точки верхнего ряда
             geometry.vertices.push(new THREE.Vector3(x, 0, z + j * sh));
             // Генерация верхнего ряда точек
-            for (var i = 1; i <= segments_width; i++) {
+            for (var i = 1; i <= swidth; i++) {
                 geometry.vertices.push(new THREE.Vector3(x + (i * sw - sw / 2.0), 0, z + (j * sh - sh / 2.0)));
                 geometry.vertices.push(new THREE.Vector3(x + i * sw, 0, z + j * sh));
 
@@ -180,17 +180,15 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
         var segments_radius_end_y = Math.min(segment_y + segments_radius_h + 1, segments_height);
 
         // Получение точки вершины холма
-        var segments_face_id = segment_x*4 + segment_y*4*segments_width;
+        var segments_face_id = segment_x * 4 + segment_y * 4 * segments_width;
         var top_face = faces[segments_face_id];
         var top = vertices[top_face.a];
 
         // Вычисление положения точки холма
-        var divider = Math.sqrt(2*height*radius);
+        var divider = Math.sqrt(2 * height * radius);
         function hill(v) {
             var y = height;
-            var xsub = (top.x - v.x);
-            var zsub = (top.z - v.z);
-            var dividend = (xsub*xsub) + (zsub*zsub);
+            var dividend = Math.pow((top.x - v.x), 2) + Math.pow((top.z - v.z), 2);
             if (dividend !== 0) {
                 y = height - (dividend/divider);
             }
@@ -220,49 +218,161 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
         }
 
         // Обработка первой точки холма
-        hill(vertices[faces[segments_radius_begin_x*4 + segments_radius_begin_y*4*segments_width].a]);
+        hill(vertices[faces[segments_radius_begin_x * 4 + segments_radius_begin_y * 4 * segments_width].a]);
 
         // Посегментный проход по первому ряду точек зоны холма, исключая первый сегмент
         for (var x = segments_radius_begin_x + 1; x < segments_radius_end_x; ++x) {
-            faceEdgePoints(faces[x*4 + segments_radius_begin_y*4*segments_width]);
+            faceEdgePoints(faces[x * 4 + segments_radius_begin_y * 4 * segments_width]);
         }
 
         // Проход по центральным сегментам зоны холма
         for (var y = segments_radius_begin_y + 1; y < segments_radius_end_y - 1; ++y) {
             for (var x = segments_radius_begin_x; x < segments_radius_end_x - 1; ++x) {
-                faceEdgePoints(faces[x*4 + y*4*segments_width]);
+                faceEdgePoints(faces[x * 4 + y * 4 * segments_width]);
             }
-            segmentFacePoints(faces[x*4 + y*4*segments_width]);
+            segmentFacePoints(faces[x * 4 + y * 4*segments_width]);
         }
 
         // Посегментный проход по последнему ряду точек зоны холма, исключая последний сегмент
         for (var x = segments_radius_begin_x; x < segments_radius_end_x - 1; ++x) {
-            var face_id = x*4 + (segments_radius_end_y - 1)*4*segments_width;
+            var face_id = x * 4 + (segments_radius_end_y - 1) * 4 * segments_width;
             segmentDiagonalPoints(faces[face_id], faces[face_id + 1]);
         }
-        segmentFacePoints(faces[x*4 + (segments_radius_end_y - 1)*4*segments_width]);
+        segmentFacePoints(faces[x * 4 + (segments_radius_end_y - 1) * 4 * segments_width]);
     }
 
-    //var sw = width/segments_width;
-    //var sh = height/segments_height;
-    //var _geometry = generateGrid(sw, sh, -width/2.0, -height/2.0);
-    //for (var i=0; i < 20; ++i) {
-    //    generateHill(_geometry.faces, _geometry.vertices, sw, sh);
+    var fx = [
+        0, 20, -20, -20, 20, 0
+    ];
+
+    // Построение кривой
+    function createCurve(pivots, points_num) {
+        // Генерация кривой для количества точек меньше или равное количеству опорных - бессмысленно
+        if (pivots.length <= points_num) {
+            // Сплайн кривая на 5 точек
+            function binom5(t, p0, s0, s1, s2, p1) {
+                var a = (1 - t);
+                return a * a * a * a * p0 +
+                       4 * a * a * a * t * s0 +
+                       6 * a * a * t * t * s1 +
+                       4 * a * t * t * t * s2 +
+                       t * t * t * t * p1;
+            }
+
+            // Сплайн кривая на 4 точки
+            function binom4(t, p0, s0, s1, p1) {
+                var a = (1 - t);
+                return a * a * a * p0 +
+                       3 * a * a * t * s0 +
+                       3 * a * t * t * s1 +
+                       t * t * t * p1;
+            }
+
+            // Сплайн кривая на 3 точки
+            function binom3(t, p0, s, p1) {
+                var a = (1 - t);
+                return a * a * p0 +
+                       2 * a * t * s +
+                       t * t * p1;
+            }
+
+            var res = [];
+            var point_shift = points_num / pivots.length;
+
+            if (3 == pivots.length) { // Генерация для 3 опорных точек
+                var max = Math.floor(point_shift*3);
+                for (var i = 0; i < max; ++i) {
+                    var t = i / (max - 1);
+                    res[i] = binom5(t, pivots[0], pivots[0], pivots[1], pivots[2], pivots[2]);
+                }
+            } else { // Генерация для опорных точек больше 3
+                // Обработка первых 2 опорных точек
+                var start = 0;
+                var max = Math.floor(point_shift * 2);
+                for (var i = start; i < max; ++i) {
+                    var t = i / (max - 1);
+                    res[i] = binom4(t, pivots[0], pivots[0], pivots[1], (pivots[1] + pivots[2]) / 2);
+                }
+                // Обработка центральных опорных точек
+                for (var p = 2; p < (pivots.length - 2); ++p) {
+                    start = max;
+                    max = Math.floor(point_shift * (p + 1));
+                    for (var i = start; i < max; ++i) {
+                        var t = (i - start) / (points_num - start);
+                        res[i] = binom3(t, (pivots[p - 1] + pivots[p]) / 2, pivots[p], (pivots[p] + pivots[p + 1]) / 2);
+                    }
+                }
+                // Обработка последних 2 опорных точек
+                start = max;
+                var k = pivots.length - 1;
+                for (var i = start; i < points_num; ++i) {
+                    var t = (i - start) / (points_num - start - 1);
+                    res[i] = binom4(t, (pivots[k - 2] + pivots[k - 1]) / 2, pivots[k - 1], pivots[k], pivots[k]);
+                }
+            }
+        }
+        return res;
+    }
+
+    function setRoute(faces, vertices, route_sw, route_sh, route_arr) {
+        // Обработка первого ряда точек не требуется
+        var vc = route_sw + 1;
+
+        // Генерация верхних рядов точек и описание поверхностей их индексами по секторам
+        var x = route_arr[1];
+        for (var j = 1; j < route_sh; ++j) {
+            // Обработка первой точки верхнего ряда
+            vertices[vc++].x += x;
+            // Обработка верхнего ряда точек
+            for (var i = 1; i <= route_sw; ++i) {
+                vertices[vc++].x += x;
+                vertices[vc++].x += x;
+            }
+            x = route_arr[j + 1];
+        }
+        // Обработка предпоследнего ряда точек
+        for (var i = 1; i <= route_sw; ++i) {
+            vc++;
+            vertices[vc++].x += x;
+        }
+    }
+
+    //function getSplinePivots(faces, vertices, sw, sh, route_arr) {
+    //    for (var j = 0; j < sh; ++j) {
+    //        for (var i = 0; i < sw; ++i) {
+    //            route_arr.length
+    //        }
+    //    }
     //}
-    //
-    //_geometry.computeBoundingSphere();
-    //
-    //// Создание итоговой сетки и применение к ней материала
+
+    var sw = width/segments_width;
+    var sh = height/segments_height;
+    var _terrain_geometry = generateGrid(sw, sh, -width/2.0, -height/2.0, segments_width, segments_height);
+    for (var i=0; i < 20; ++i) {
+        generateHill(_terrain_geometry.faces, _terrain_geometry.vertices, sw, sh);
+    }
+    //_terrain_geometry.computeBoundingSphere();
+
+
+    var route_w = 4;
+    var route_h = height;
+    var route_sw = 4;
+    var route_sh = segments_height * 2;
+    var _route_geometry = generateGrid(route_w/route_sw, route_h/route_sh, -route_w / 2, -route_h / 2, route_sw, route_sh);
+    var route = createCurve(fx, route_sh);
+    setRoute(_route_geometry.faces, _route_geometry.vertices, route_sw, route_sh, route);
+
+    //smootheRoute(_terrain_geometry.faces, _terrain_geometry.vertices, sw, sh,
+    //             _route_geometry.faces, _route_geometry.vertices, route_sw, route_sh);
+
+    // Создание итоговой сетки и применение к ней материала
     ////var _material = new THREE.MeshBasicMaterial({ color:0x00ff00 });
     //var _material = new THREE.MeshBasicMaterial({ color:0x00ff00, wireframe: true, transparent: true });
-    //var _mesh = new THREE.Mesh(_geometry, _material);
-    //
+    //var _mesh = new THREE.Mesh(_terrain_geometry, _material);
     //_scope.add(_mesh);
 
-    generateRoute(_geometry.faces, _geometry.vertices) {
-        var geometry = new THREE.Geometry();
-
-
-    }
+    //var _material = new THREE.MeshBasicMaterial({ color:0x0000ff, wireframe: true, transparent: true });
+    //var _mesh = new THREE.Mesh(_route_geometry, _material);
+    //_scope.add(_mesh);
 };
 MODELS.Terrain.prototype = Object.create(THREE.Group.prototype);
