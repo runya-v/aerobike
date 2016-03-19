@@ -41,11 +41,11 @@ MODELS.BikePelican = function() {
     }
 
     this.update = function(dclock) {
-        //if (_alpha > 360) {
-        //    _alpha = 0;
-        //}
-        //_scope.position.y += Math.sin(_alpha * (Math.PI / 180.0)) * FLOUTIN_DISTANCE_PERCENT;
-        //_alpha += dclock * 200;
+        if (_alpha > 360) {
+            _alpha = 0;
+        }
+        _scope.position.y += Math.sin(_alpha * (Math.PI / 180.0)) * FLOUTIN_DISTANCE_PERCENT;
+        _alpha += dclock * 200;
     };
 };
 MODELS.BikePelican.prototype = Object.create(THREE.Group.prototype);
@@ -87,7 +87,7 @@ MODELS.Cloud = function(min_x, min_y, min_z, max_x, max_y, max_z) {
 
     function getCoordinate(max) {
         var probs = [0.59, 0.55, 0.51, 0.5, 0.49, 0.45, 0.42, 0.41, 0.405, 0.4, 0.39, 0.35,
-                     0.32, 0.3, 0.29, 0.25, 0.2, 0.15, 0.1, 0.05, 0.02, 0.01];
+            0.32, 0.3, 0.29, 0.25, 0.2, 0.15, 0.1, 0.05, 0.02, 0.01];
         return max * 0.5 - max * Math.floor(probs.length * Math.random());
     }
 
@@ -100,7 +100,7 @@ MODELS.Cloud = function(min_x, min_y, min_z, max_x, max_y, max_z) {
         return min + ((max - min) * Math.random());
     }
 
-    this.update = function(dclock) {
+    this.update = function() {
         for (var i = 0; i < _fractions.length; ++i) {
             var s = _fractions[i];
             var k = 0.001;
@@ -253,27 +253,27 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
             function binom5(t, p0, s0, s1, s2, p1) {
                 var a = (1 - t);
                 return a * a * a * a * p0 +
-                       4 * a * a * a * t * s0 +
-                       6 * a * a * t * t * s1 +
-                       4 * a * t * t * t * s2 +
-                       t * t * t * t * p1;
+                    4 * a * a * a * t * s0 +
+                    6 * a * a * t * t * s1 +
+                    4 * a * t * t * t * s2 +
+                    t * t * t * t * p1;
             }
 
             // Сплайн кривая на 4 точки
             function binom4(t, p0, s0, s1, p1) {
                 var a = (1 - t);
                 return a * a * a * p0 +
-                       3 * a * a * t * s0 +
-                       3 * a * t * t * s1 +
-                       t * t * t * p1;
+                    3 * a * a * t * s0 +
+                    3 * a * t * t * s1 +
+                    t * t * t * p1;
             }
 
             // Сплайн кривая на 3 точки
             function binom3(t, p0, s, p1) {
                 var a = (1 - t);
                 return a * a * p0 +
-                       2 * a * t * s +
-                       t * t * p1;
+                    2 * a * t * s +
+                    t * t * p1;
             }
 
             var res = [];
@@ -337,22 +337,58 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
         }
     }
 
-    //function getSplinePivots(faces, vertices, sw, sh, route_arr) {
-    //    for (var j = 0; j < sh; ++j) {
-    //        for (var i = 0; i < sw; ++i) {
-    //            route_arr.length
-    //        }
-    //    }
-    //}
+    function getSplinePivots(faces, vertices, segments_w, segments_h,  sw, sh, route_arr) {
+        var res = [];
+        var delta_average = segments_h / route_arr.length;
+        var aver_sum = 0;
+        var aver_radius = delta_average / 2;
 
-    var sw = width/segments_width;
-    var sh = height/segments_height;
-    var _terrain_geometry = generateGrid(sw, sh, -width/2.0, -height/2.0, segments_width, segments_height);
+        for (var riter in  route_arr) {
+            // Получить точку изгиба трассы
+            var sx = Math.floor(route_arr[riter] / sw + segments_w / 2);
+            var sy = Math.floor(riter * delta_average);
+
+            // Получить параметры зоны точки изгиба трассы
+            var segments_radius_begin_x = Math.max(0, sx - aver_radius);
+            var segments_radius_begin_y = Math.max(0, sy - aver_radius);
+            var segments_radius_end_x = Math.min(sx + aver_radius + 1, segments_w);
+            var segments_radius_end_y = Math.min(sy + aver_radius + 1, segments_h);
+
+            // Получение средней высоты для данной позиции
+            var max = 0;
+            var summ = 0;
+            for (var j = segments_radius_begin_y; j < segments_radius_end_y; ++j) {
+                for (var i = segments_radius_begin_x; i < segments_radius_end_x; ++i) {
+                    var face_id = i * 4 + j * 4 * segments_w;
+                    var vert_id = faces[face_id].a;
+                    max = Math.max(max, vertices[vert_id].y);
+                    aver_sum += vertices[vert_id].y;
+                    ++summ;
+                }
+            }
+            // Получение координат ключевых точек трассы
+            var x = sx * sw;
+            var y = 0;
+            if (aver_sum && summ) {
+                y = aver_sum / summ;
+            };
+            var z = sy * sh;
+            res[riter] = { x:x, y:y, z:z };
+            console.log('[' + max + '] ' + JSON.stringify(res[riter]));
+        }
+        return res;
+    }
+
+    var sw = width / segments_width;
+    var sh = height / segments_height;
+    var _terrain_geometry = generateGrid(sw, sh, -width / 2.0, -height / 2.0, segments_width, segments_height);
     for (var i=0; i < 20; ++i) {
         generateHill(_terrain_geometry.faces, _terrain_geometry.vertices, sw, sh);
     }
     //_terrain_geometry.computeBoundingSphere();
 
+    var spline_pivots = getSplinePivots(_terrain_geometry.faces, _terrain_geometry.vertices,
+        segments_width, segments_height, sw, sh, fx);
 
     var route_w = 4;
     var route_h = height;
