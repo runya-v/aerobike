@@ -49,6 +49,9 @@
             var camera;
             var controls;
             var clock = new THREE.Clock();
+            var animations = [];
+            var load_count = 0;
+            var files_count = 0;
 
             function main() {
                 renderer = new THREE.WebGLRenderer({antialias: true, alpha: false});
@@ -77,17 +80,28 @@
                     var input_file = document.getElementById('input_file');
                     input_file.addEventListener("change", function(e) {
                         var files = this.files;
-                        for (var file in files) {
+                        files_count = files.length;
+                        for (var f = 0; f <  files.length; ++f) {
+                            var dae_name = './collada/' + files[f].name;
                             var loader = new THREE.ColladaLoader();
-                            loader.load("./collada/" + files[file].name, function (collada) {
-                                collada.scene.traverse(function (child) {
+                            loader.load(dae_name, function (collada) {
+                                console.log('file: ' + dae_name);
+                                var dae = collada.scene;
+                                dae.traverse(function(child) {
                                     if (child instanceof THREE.SkinnedMesh) {
-                                        var animation = new THREE.Animation(child, child.geometry.animation);
-                                        animation.play();
+                                        animations[load_count] = new THREE.Animation(child, child.geometry.animation);
                                         camera.lookAt(child.position);
+                                        ++load_count;
+                                        if (load_count == files_count) {
+                                            for(var animation in animations) {
+                                                animations[animation].play();
+                                            }
+                                            console.log("play animations");
+                                        }
                                     }
                                 });
-                                group.add(collada.scene);
+                                dae.updateMatrix();
+                                group.add(dae);
                             });
                         }
                     }, false);
