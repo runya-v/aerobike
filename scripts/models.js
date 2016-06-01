@@ -19,24 +19,33 @@ MODELS.BikePelican = function() {
     var _animation;
     var _alpha = 0;
 
-    // Загрузка байка
-    loadModel("bike_01.png", "bike_01.dae");
-    // Загрузка рокетного двигателя
-    loadModel("mono_jet_01.png", "mono_jet_01.dae");
+    var _animations = [];
+    var _load_count = 0;
 
-    function loadModel(texture_file, model_file) {
-        var obj_texture = new UTILS.TextureLoader();
-        obj_texture.load("./textures/" + texture_file, function(texture) {
-            var loader = new THREE.ColladaLoader();
-            loader.convertUpAxis = true;
-            loader.load("./collada/" + model_file, function(collada) {
-                var model = collada.scene;
-                collada.scene.traverse(function(child) {
-                    model.position.y = 1;
-                    model.children[0].children[0].material = new THREE.MeshBasicMaterial({map:texture});
-                });
-                _scope.add(collada.scene);
+    // Загрузка байка
+    loadModel("collada/bike_01.dae");
+    // Загрузка рокетного двигателя
+    loadModel("collada/mono_jet_01.dae");
+
+    function loadModel(model_file) {
+        var loader = new THREE.ColladaLoader();
+        loader.load(model_file, function (collada) {
+            console.log('model file: ' + model_file);
+            var dae = collada.scene;
+            dae.traverse(function(child) {
+                if (child instanceof THREE.SkinnedMesh) {
+                    _animations[_load_count] = new THREE.Animation(child, child.geometry.animation);
+                    ++_load_count;
+                    if (_load_count == 2) {
+                        for(var animation in _animations) {
+                            _animations[animation].play();
+                        }
+                        console.log("play animations");
+                    }
+                }
             });
+            dae.updateMatrix();
+            _scope.add(dae);
         });
     }
 
@@ -141,7 +150,7 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
                 var id_3 = id_4 - 1;
                 var id_2 = id_3 - 1;
 
-                // Вычисление описание сектора
+                // Вычисление описания сектора
                 geometry.faces.push(
                     new THREE.Face3(id_3, id_1, id_0),
                     new THREE.Face3(id_3, id_4, id_1),
@@ -245,98 +254,99 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
         0, 20, -20, -20, 20, 0
     ];
 
-    // Построение кривой
-    function createCurve(pivots, points_num) {
-        // Генерация кривой для количества точек меньше или равное количеству опорных - бессмысленно
-        if (pivots.length <= points_num) {
-            // Сплайн кривая на 5 точек
-            function binom5(t, p0, s0, s1, s2, p1) {
-                var a = (1 - t);
-                return a * a * a * a * p0 +
-                    4 * a * a * a * t * s0 +
-                    6 * a * a * t * t * s1 +
-                    4 * a * t * t * t * s2 +
-                    t * t * t * t * p1;
-            }
+    //// Построение кривой
+    //function createCurve(pivots, points_num) {
+    //    // Генерация кривой для количества точек меньше или равное количеству опорных - бессмысленно
+    //    if (pivots.length <= points_num) {
+    //        // Сплайн кривая на 5 точек
+    //        function binom5(t, p0, s0, s1, s2, p1) {
+    //            var a = (1 - t);
+    //            return a * a * a * a * p0 +
+    //                4 * a * a * a * t * s0 +
+    //                6 * a * a * t * t * s1 +
+    //                4 * a * t * t * t * s2 +
+    //                t * t * t * t * p1;
+    //        }
+    //
+    //        // Сплайн кривая на 4 точки
+    //        function binom4(t, p0, s0, s1, p1) {
+    //            var a = (1 - t);
+    //            return a * a * a * p0 +
+    //                3 * a * a * t * s0 +
+    //                3 * a * t * t * s1 +
+    //                t * t * t * p1;
+    //        }
+    //
+    //        // Сплайн кривая на 3 точки
+    //        function binom3(t, p0, s, p1) {
+    //            var a = (1 - t);
+    //            return a * a * p0 +
+    //                2 * a * t * s +
+    //                t * t * p1;
+    //        }
+    //
+    //        var res = [];
+    //        var point_shift = points_num / pivots.length;
+    //
+    //        if (3 == pivots.length) { // Генерация для 3 опорных точек
+    //            var max = Math.floor(point_shift*3);
+    //            for (var i = 0; i < max; ++i) {
+    //                var t = i / (max - 1);
+    //                res[i] = binom5(t, pivots[0], pivots[0], pivots[1], pivots[2], pivots[2]);
+    //            }
+    //        } else { // Генерация для опорных точек больше 3
+    //            // Обработка первых 2 опорных точек
+    //            var start = 0;
+    //            var max = Math.floor(point_shift * 2);
+    //            for (var i = start; i < max; ++i) {
+    //                var t = i / (max - 1);
+    //                res[i] = binom4(t, pivots[0], pivots[0], pivots[1], (pivots[1] + pivots[2]) / 2);
+    //            }
+    //            // Обработка центральных опорных точек
+    //            for (var p = 2; p < (pivots.length - 2); ++p) {
+    //                start = max;
+    //                max = Math.floor(point_shift * (p + 1));
+    //                for (var i = start; i < max; ++i) {
+    //                    var t = (i - start) / (points_num - start);
+    //                    res[i] = binom3(t, (pivots[p - 1] + pivots[p]) / 2, pivots[p], (pivots[p] + pivots[p + 1]) / 2);
+    //                }
+    //            }
+    //            // Обработка последних 2 опорных точек
+    //            start = max;
+    //            var k = pivots.length - 1;
+    //            for (var i = start; i < points_num; ++i) {
+    //                var t = (i - start) / (points_num - start - 1);
+    //                res[i] = binom4(t, (pivots[k - 2] + pivots[k - 1]) / 2, pivots[k - 1], pivots[k], pivots[k]);
+    //            }
+    //        }
+    //    }
+    //    return res;
+    //}
+    //
+    //function setRoute(faces, vertices, route_sw, route_sh, route_arr) {
+    //    // Обработка первого ряда точек не требуется
+    //    var vc = route_sw + 1;
+    //
+    //    // Генерация верхних рядов точек и описание поверхностей их индексами по секторам
+    //    var x = route_arr[1];
+    //    for (var j = 1; j < route_sh; ++j) {
+    //        // Обработка первой точки верхнего ряда
+    //        vertices[vc++].x += x;
+    //        // Обработка верхнего ряда точек
+    //        for (var i = 1; i <= route_sw; ++i) {
+    //            vertices[vc++].x += x;
+    //            vertices[vc++].x += x;
+    //        }
+    //        x = route_arr[j + 1];
+    //    }
+    //    // Обработка предпоследнего ряда точек
+    //    for (var i = 1; i <= route_sw; ++i) {
+    //        vc++;
+    //        vertices[vc++].x += x;
+    //    }
+    //}
 
-            // Сплайн кривая на 4 точки
-            function binom4(t, p0, s0, s1, p1) {
-                var a = (1 - t);
-                return a * a * a * p0 +
-                    3 * a * a * t * s0 +
-                    3 * a * t * t * s1 +
-                    t * t * t * p1;
-            }
-
-            // Сплайн кривая на 3 точки
-            function binom3(t, p0, s, p1) {
-                var a = (1 - t);
-                return a * a * p0 +
-                    2 * a * t * s +
-                    t * t * p1;
-            }
-
-            var res = [];
-            var point_shift = points_num / pivots.length;
-
-            if (3 == pivots.length) { // Генерация для 3 опорных точек
-                var max = Math.floor(point_shift*3);
-                for (var i = 0; i < max; ++i) {
-                    var t = i / (max - 1);
-                    res[i] = binom5(t, pivots[0], pivots[0], pivots[1], pivots[2], pivots[2]);
-                }
-            } else { // Генерация для опорных точек больше 3
-                // Обработка первых 2 опорных точек
-                var start = 0;
-                var max = Math.floor(point_shift * 2);
-                for (var i = start; i < max; ++i) {
-                    var t = i / (max - 1);
-                    res[i] = binom4(t, pivots[0], pivots[0], pivots[1], (pivots[1] + pivots[2]) / 2);
-                }
-                // Обработка центральных опорных точек
-                for (var p = 2; p < (pivots.length - 2); ++p) {
-                    start = max;
-                    max = Math.floor(point_shift * (p + 1));
-                    for (var i = start; i < max; ++i) {
-                        var t = (i - start) / (points_num - start);
-                        res[i] = binom3(t, (pivots[p - 1] + pivots[p]) / 2, pivots[p], (pivots[p] + pivots[p + 1]) / 2);
-                    }
-                }
-                // Обработка последних 2 опорных точек
-                start = max;
-                var k = pivots.length - 1;
-                for (var i = start; i < points_num; ++i) {
-                    var t = (i - start) / (points_num - start - 1);
-                    res[i] = binom4(t, (pivots[k - 2] + pivots[k - 1]) / 2, pivots[k - 1], pivots[k], pivots[k]);
-                }
-            }
-        }
-        return res;
-    }
-
-    function setRoute(faces, vertices, route_sw, route_sh, route_arr) {
-        // Обработка первого ряда точек не требуется
-        var vc = route_sw + 1;
-
-        // Генерация верхних рядов точек и описание поверхностей их индексами по секторам
-        var x = route_arr[1];
-        for (var j = 1; j < route_sh; ++j) {
-            // Обработка первой точки верхнего ряда
-            vertices[vc++].x += x;
-            // Обработка верхнего ряда точек
-            for (var i = 1; i <= route_sw; ++i) {
-                vertices[vc++].x += x;
-                vertices[vc++].x += x;
-            }
-            x = route_arr[j + 1];
-        }
-        // Обработка предпоследнего ряда точек
-        for (var i = 1; i <= route_sw; ++i) {
-            vc++;
-            vertices[vc++].x += x;
-        }
-    }
-
+    // Вычисление усреднённых вертикальных подъемов для ключевых точек горизонтальных изгибов трассы
     function getSplinePivots(faces, vertices, segments_w, segments_h,  sw, sh, route_arr) {
         var res = [];
         var delta_average = segments_h / route_arr.length;
@@ -379,24 +389,42 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
         return res;
     }
 
+    function spline(pivouts, points) {
+
+    };
+
+    // Генерация трассы
+    //var ROUTE_HKOEFF = 2;
+    function setRoute(pivots, swidth_rou, swidth_tir, sheight, tir_faces, tir_vertices, route_faces, route_vertices) {
+        // Проход по маршруту трассы и получение горизонтальных изгибов трассы по опорным точкам трассы
+        for(var i = 0; i < sheight; ++i) {
+            console.log(JSON.stringify(route_faces[i]));
+        }
+        // Проход по маршруту трассы и получение вертикальных изгибов трассы  по опорным точкам трассы
+    }
+
     var sw = width / segments_width;
     var sh = height / segments_height;
-    var _terrain_geometry = generateGrid(sw, sh, -width / 2.0, -height / 2.0, segments_width, segments_height);
-    for (var i=0; i < 20; ++i) {
+    var _terrain_geometry = generateGrid(sw, sh, -width / 2, -height / 2, segments_width, segments_height);
+    for (var i = 0; i < 20; ++i) {
         generateHill(_terrain_geometry.faces, _terrain_geometry.vertices, sw, sh);
     }
     //_terrain_geometry.computeBoundingSphere();
 
     var spline_pivots = getSplinePivots(_terrain_geometry.faces, _terrain_geometry.vertices,
-        segments_width, segments_height, sw, sh, fx);
-
-    var route_w = 4;
-    var route_h = height;
-    var route_sw = 4;
-    var route_sh = segments_height * 2;
-    var _route_geometry = generateGrid(route_w/route_sw, route_h/route_sh, -route_w / 2, -route_h / 2, route_sw, route_sh);
-    var route = createCurve(fx, route_sh);
-    setRoute(_route_geometry.faces, _route_geometry.vertices, route_sw, route_sh, route);
+                                        segments_width, segments_height, sw, sh, fx);
+    var route_w = 4; // Ширина трассы
+    var route_h = height; // Длинна проекции трассы
+    var route_sw = 4; // Число сегментов трассы в ширину
+    //var route_sh = segments_height * ROUTE_HKOEFF; // Число сегментов в длинну больше числа сегментов тирейна в длинну.
+    var route_sh = segments_height; // Число сегментов трассы в длинну.
+    var _route_geometry = generateGrid(route_w / route_sw, route_h / route_sh, -route_w / 2, -route_h / 2, route_sw, route_sh);
+    //var route = createCurve(fx, route_sh);
+    //setRoute(_route_geometry.faces, _route_geometry.vertices, route_sw, route_sh, route);
+    setRoute(spline_pivots,
+             route_sw, segments_width, segments_height,
+             _terrain_geometry.faces, _terrain_geometry.vertices,
+             _route_geometry.faces, _route_geometry.vertices);
 
     //smootheRoute(_terrain_geometry.faces, _terrain_geometry.vertices, sw, sh,
     //             _route_geometry.faces, _route_geometry.vertices, route_sw, route_sh);
