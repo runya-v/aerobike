@@ -126,7 +126,7 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
     THREE.Group.call(this);
     var _scope = this;
 
-    function generateGrid(sw, sh, x, z, swidth, sheight) {
+    Grid = function (sw, sh, x, z, swidth, sheight) {
         var geometry = new THREE.Geometry();
 
         // Генерация первого ряда точек
@@ -384,28 +384,109 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
             };
             var z = sy * sh;
             res[riter] = { x:x, y:y, z:z };
-            console.log('[' + max + '] ' + JSON.stringify(res[riter]));
+            //console.log('[' + max + '] ' + JSON.stringify(res[riter]));
         }
         return res;
     }
 
-    function spline(pivouts, points) {
+    // Итератор по рядам точек
+    VerticesRowsForwardIterator = function(fw, fh, faces, vertices) {
+        var _cur_row = 0;
+        var _cur_fi = 0;
 
+        this.inc = function() {
+            var row = [];
+            var irow = 0;
+            var face;
+            if (!_cur_row) {
+                // Получить 0 ряд точек
+                for (irow = 0; irow < fw; ++irow) {
+                    face = faces[irow * 4];
+                    row[irow] = vertices[face.c];
+                }
+                row[irow] = vertices[face.b];
+            } else if (_cur_row % 2) {
+                // Получить не чётный ряд точек
+                for (var i = _cur_fi; i < _cur_fi + fw; ++i) {
+                    face = faces[i * 4];
+                    row[irow++] = vertices[face.a];
+                }
+            } else {
+                // Получить чётный ряд точек
+                for (var i = _cur_fi; i < _cur_fi + fw; ++i) {
+                    face = faces[(i * 4) + 2];
+                    row[irow++] = vertices[face.b];
+                }
+                row[irow] = vertices[face.c];
+                _cur_fi += fw;
+            }
+            ++_cur_row;
+            return row;
+        };
+
+        this.curRow = function() {
+            return _cur_row;
+        }
     };
 
     // Генерация трассы
     //var ROUTE_HKOEFF = 2;
-    function setRoute(pivots, swidth_rou, swidth_tir, sheight, tir_faces, tir_vertices, route_faces, route_vertices) {
-        // Проход по маршруту трассы и получение горизонтальных изгибов трассы по опорным точкам трассы
-        for(var i = 0; i < sheight; ++i) {
-            console.log(JSON.stringify(route_faces[i]));
+    function setRoute(pivots, width_rou, swidth_rou, swidth_tir, sheight, tir_faces, tir_vertices, route_faces, route_vertices) {
+        // Проход по опорным точкам
+        if (pivots.length > 2) {
+            //// Присвоить первому ряду точек трассы значения опорных точек относительно ширины трассы
+            //var wshift = -width_rou / 2;
+            //for (var ir = 0; ir <= swidth_rou; ++ir) {
+            //    route_vertices[ir].x = pivots[0].x + wshift;
+            //    route_vertices[ir].y = pivots[0].y;
+            //    route_vertices[ir].z = pivots[0].z;
+            //    wshift += width_rou / swidth_rou; // сместиться на ширину сегмента
+            //    //console.log(JSON.stringify(route_vertices[ir]));
+            //}
+            var vrfi = new VerticesRowsForwardIterator(swidth_rou, sheight, route_faces, route_vertices);
+            var row = vrfi.inc();
+            console.log('> Row: ' + vrfi.curRow());
+            for (var irw in row) {
+                console.log(JSON.stringify(row[irw]));
+            }
+            for (var hi = 0; hi < sheight; ++hi) {
+                row = vrfi.inc();
+                console.log('> Row: ' + vrfi.curRow());
+                for (var irw in row) {
+                    console.log(JSON.stringify(row[irw]));
+                }
+                row = vrfi.inc();
+                console.log('> Row: ' + vrfi.curRow());
+                for (var irw in row) {
+                    console.log(JSON.stringify(row[irw]));
+                }
+            }
+
+            //// Получить дробное количество точек трассы в пределах отрезка опорных точек
+            //var hshift = swidth_rou / pivots.length;
+            //var old_pos = 0;
+            //for (var i = 0; i < pivots.length - 1; ++i) {
+            //    var ra = pivots[i];
+            //    var rb = pivots[i + 1];
+            //    console.log('# -> ' + JSON.stringify(ra) + ' <-> ' + JSON.stringify(rb));
+            //    // Обработка точек трассы в пределах опорного отрезка
+            //    var pos = Math.floor(hshift * i);
+            //    for (var p = old_pos; p < pos; ++p) {
+            //        // Проход по сегментов
+            //        for (var si = route_faces) {
+            //
+            //        }
+            //    }
+            //    old_pos = pos;
+            //}
+        } else {
+            console.log('Опорных точек должно быть больше 2');
         }
-        // Проход по маршруту трассы и получение вертикальных изгибов трассы  по опорным точкам трассы
     }
 
     var sw = width / segments_width;
     var sh = height / segments_height;
-    var _terrain_geometry = generateGrid(sw, sh, -width / 2, -height / 2, segments_width, segments_height);
+    var _terrain_geometry = new Grid(sw, sh, -width / 2, -height / 2, segments_width, segments_height);
     for (var i = 0; i < 20; ++i) {
         generateHill(_terrain_geometry.faces, _terrain_geometry.vertices, sw, sh);
     }
@@ -413,16 +494,16 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
 
     var spline_pivots = getSplinePivots(_terrain_geometry.faces, _terrain_geometry.vertices,
                                         segments_width, segments_height, sw, sh, fx);
+    var tir_sh = segments_width; // Число сегментов тирейна в ширину.
     var route_w = 4; // Ширина трассы
     var route_h = height; // Длинна проекции трассы
     var route_sw = 4; // Число сегментов трассы в ширину
     //var route_sh = segments_height * ROUTE_HKOEFF; // Число сегментов в длинну больше числа сегментов тирейна в длинну.
     var route_sh = segments_height; // Число сегментов трассы в длинну.
-    var _route_geometry = generateGrid(route_w / route_sw, route_h / route_sh, -route_w / 2, -route_h / 2, route_sw, route_sh);
+    var _route_geometry = new Grid(route_w / route_sw, route_h / route_sh, -route_w / 2, -route_h / 2, route_sw, route_sh);
     //var route = createCurve(fx, route_sh);
     //setRoute(_route_geometry.faces, _route_geometry.vertices, route_sw, route_sh, route);
-    setRoute(spline_pivots,
-             route_sw, segments_width, segments_height,
+    setRoute(spline_pivots, route_w, route_sw, tir_sh, segments_height,
              _terrain_geometry.faces, _terrain_geometry.vertices,
              _route_geometry.faces, _route_geometry.vertices);
 
