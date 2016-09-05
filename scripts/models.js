@@ -349,7 +349,7 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
     // Вычисление усреднённых вертикальных подъемов для ключевых точек горизонтальных изгибов трассы
     function getSplinePivots(faces, vertices, segments_w, segments_h,  sw, sh, route_arr) {
         var res = [];
-        var delta_average = segments_h / route_arr.length;
+        var delta_average = segments_h / (route_arr.length - 1); // смещение определятся количеством отрезков, а не точек
         var aver_sum = 0;
         var aver_radius = delta_average / 2;
 
@@ -381,7 +381,7 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
             var y = 0;
             if (aver_sum && summ) {
                 y = aver_sum / summ;
-            };
+            }
             var z = sy * sh;
             res[riter] = { x:x, y:y, z:z };
             //console.log('[' + max + '] ' + JSON.stringify(res[riter]));
@@ -390,8 +390,13 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
     }
 
     // Итератор по рядам точек
-    VerticesRowsForwardIterator = function(fw, fh, faces, vertices) {
+    VerticesRowsForwardIterator = function(start, fw, fh, faces, vertices) {
         var _cur_row = 0;
+        if (start < fh * 2) {
+            _cur_row = start;
+        } else {
+            _cur_row = fh * 2;
+        }
         var _cur_fi = 0;
 
         this.inc = function() {
@@ -427,6 +432,10 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
         this.curRow = function() {
             return _cur_row;
         }
+
+        this.getRows = function() {
+            return (fh * 2) + 1 - start;
+        }
     };
 
     // Генерация трассы
@@ -434,51 +443,29 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
     function setRoute(pivots, width_rou, swidth_rou, swidth_tir, sheight, tir_faces, tir_vertices, route_faces, route_vertices) {
         // Проход по опорным точкам
         if (pivots.length > 2) {
-            //// Присвоить первому ряду точек трассы значения опорных точек относительно ширины трассы
-            //var wshift = -width_rou / 2;
-            //for (var ir = 0; ir <= swidth_rou; ++ir) {
-            //    route_vertices[ir].x = pivots[0].x + wshift;
-            //    route_vertices[ir].y = pivots[0].y;
-            //    route_vertices[ir].z = pivots[0].z;
-            //    wshift += width_rou / swidth_rou; // сместиться на ширину сегмента
-            //    //console.log(JSON.stringify(route_vertices[ir]));
-            //}
-            var vrfi = new VerticesRowsForwardIterator(swidth_rou, sheight, route_faces, route_vertices);
+            var vrfi = new VerticesRowsForwardIterator(0, swidth_rou, sheight, route_faces, route_vertices);
             var row = vrfi.inc();
-            console.log('> Row: ' + vrfi.curRow());
-            for (var irw in row) {
-                console.log(JSON.stringify(row[irw]));
-            }
-            for (var hi = 0; hi < sheight; ++hi) {
-                row = vrfi.inc();
-                console.log('> Row: ' + vrfi.curRow());
-                for (var irw in row) {
-                    console.log(JSON.stringify(row[irw]));
-                }
-                row = vrfi.inc();
-                console.log('> Row: ' + vrfi.curRow());
-                for (var irw in row) {
-                    console.log(JSON.stringify(row[irw]));
-                }
+            // Присвоить первому ряду точек трассы значения опорных точек относительно ширины трассы
+            var wshift = -width_rou / 2;
+            for (var ir = 0; ir <= swidth_rou; ++ir) {
+                row[ir].x = pivots[0].x + wshift;
+                row[ir].y = pivots[0].y;
+                row[ir].z = pivots[0].z;
+                wshift += width_rou / swidth_rou; // сместиться на ширину сегмента
+                //console.log(JSON.stringify(route_vertices[ir]));
             }
 
-            //// Получить дробное количество точек трассы в пределах отрезка опорных точек
-            //var hshift = swidth_rou / pivots.length;
-            //var old_pos = 0;
-            //for (var i = 0; i < pivots.length - 1; ++i) {
-            //    var ra = pivots[i];
-            //    var rb = pivots[i + 1];
-            //    console.log('# -> ' + JSON.stringify(ra) + ' <-> ' + JSON.stringify(rb));
-            //    // Обработка точек трассы в пределах опорного отрезка
-            //    var pos = Math.floor(hshift * i);
-            //    for (var p = old_pos; p < pos; ++p) {
-            //        // Проход по сегментов
-            //        for (var si = route_faces) {
-            //
-            //        }
-            //    }
-            //    old_pos = pos;
-            //}
+            // Получить дробное количество точек трассы в пределах отрезка опорных точек
+            var hshift = vrfi.getRows() / (pivots.length - 1); // смещение определятся количеством отрезков, а не точек;
+            var beg_pos = 0;
+            for (var i = 0; i < pivots.length - 1; ++i) {
+                var ra = pivots[i];     // стартовая точка отрезка кривой
+                var rb = pivots[i + 1]; // завершающая точка отрезка кривой
+                // Обработка точек трассы в пределах опорного отрезка
+                var end_pos = Math.floor(hshift * (i + 1));
+                console.log('# -> ' + beg_pos + ' <-> ' + end_pos);
+                beg_pos = end_pos;
+            }
         } else {
             console.log('Опорных точек должно быть больше 2');
         }
