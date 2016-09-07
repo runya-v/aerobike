@@ -443,27 +443,28 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
     function setRoute(pivots, width_rou, swidth_rou, swidth_tir, sheight, tir_faces, tir_vertices, route_faces, route_vertices) {
         // Проход по опорным точкам
         if (pivots.length > 2) {
-            var vrfi = new VerticesRowsForwardIterator(0, swidth_rou, sheight, route_faces, route_vertices);
-            var row = vrfi.inc();
-            // Присвоить первому ряду точек трассы значения опорных точек относительно ширины трассы
-            var wshift = -width_rou / 2;
-            for (var ir = 0; ir <= swidth_rou; ++ir) {
-                row[ir].x = pivots[0].x + wshift;
-                row[ir].y = pivots[0].y;
-                row[ir].z = pivots[0].z;
-                wshift += width_rou / swidth_rou; // сместиться на ширину сегмента
-                //console.log(JSON.stringify(route_vertices[ir]));
-            }
+            // Вычислить точки кривизны P1 и P2 для опорных точек
 
+            var vrfi = new VerticesRowsForwardIterator(0, swidth_rou, sheight, route_faces, route_vertices);
             // Получить дробное количество точек трассы в пределах отрезка опорных точек
             var hshift = vrfi.getRows() / (pivots.length - 1); // смещение определятся количеством отрезков, а не точек;
             var beg_pos = 0;
+            var row;
             for (var i = 0; i < pivots.length - 1; ++i) {
                 var ra = pivots[i];     // стартовая точка отрезка кривой
                 var rb = pivots[i + 1]; // завершающая точка отрезка кривой
                 // Обработка точек трассы в пределах опорного отрезка
                 var end_pos = Math.floor(hshift * (i + 1));
-                console.log('# -> ' + beg_pos + ' <-> ' + end_pos);
+                // Проход по рядам в пределах отрезка
+                var count = end_pos - beg_pos;
+                for (var j = 0; j < count; ++j) {
+                    var t = j / count;
+                    row = vrfi.inc();
+                    console.log('  >' + t + ' | ' + JSON.stringify(row));
+                    // Вычислить кривизну для x координаты точек трассы
+
+                    // Вычислить кривизну для y координаты точек трассы
+                }
                 beg_pos = end_pos;
             }
         } else {
