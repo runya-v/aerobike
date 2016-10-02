@@ -202,8 +202,8 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
           }
           return res;
         }
-        segment_x = correct_pos(segment_x, segments_radius_w, segments_width);
-        segment_y = correct_pos(segment_y, segments_radius_h, segments_height);
+        segment_x = correct_pos(segment_x, segments_radius_w, segments_width - 1);
+        segment_y = correct_pos(segment_y, segments_radius_h, segments_height - 1);
 
         // Получить параметры зоны холма
         var segments_radius_begin_x = segment_x - segments_radius_w;
@@ -278,8 +278,10 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
         0, -4, 6, -8, 4, 2
     ];
 
+    var ROUTE_HEGHT_PERCENT = 0.6;
+
     /** 
-     * Вычисление усреднённых вертикальных подъемов для ключевых точек горизонтальных изгибов трассы
+     * Вычисление процента вертикальных подъемов от максимальной в пределах зоны, для ключевых точек горизонтальных изгибов трассы 
      * segments_w, - ширина ландшафта в сегментах
      * segments_h, - длинна ландшафта в сегментах
      * sw,         - ширина сегмента
@@ -291,7 +293,7 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
     function getSplinePivots(segments_w, segments_h,  sw, sh, route_arr, faces, vertices) {
         var res = [];
         var delta_average = segments_h / (route_arr.length - 1); // смещение определятся количеством отрезков, а не точек
-        var aver_radius = delta_average / 2;
+        var aver_radius = delta_average * 0.25; // область для нахождения максимальной точки в радиусе 1/4 от длинны отрезка трассы
 
         for (var riter in  route_arr) {
             // Получить сегмент изгиба трассы
@@ -304,30 +306,18 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
             var segments_radius_end_x = Math.min(segm_x + aver_radius + 1, segments_w);
             var segments_radius_end_y = Math.min(segm_y + aver_radius + 1, segments_h);
 
-            // Получение средней высоты для данной позиции
+            // Получение максимальной высоты для данной позиции
             var max = 0;
-            var count = 0;
-            var aver_sum = 0;
             for (var j = segments_radius_begin_y; j < segments_radius_end_y; ++j) {
                 for (var i = segments_radius_begin_x; i < segments_radius_end_x; ++i) {
                     var face_id = i * 4 + j * 4 * segments_w;
                     var vert_id = faces[face_id].a;
                     max = Math.max(max, vertices[vert_id].y);
-                    aver_sum += vertices[vert_id].y;
-                    ++count;
                 }
             }
             // Получение координат ключевых точек трассы
             var x = (segm_x - (segments_w * 0.5)) * sw;
-            var y = 0;
-            if (aver_sum && count) {
-                // if (riter == 0 || riter == (route_arr.length - 1)) {
-                //     y = Math.exp(aver_sum / count) * 0.1;
-                // } else {
-                //     y = Math.exp(aver_sum / count) * 0.5;
-                // }
-                y = aver_sum / count;
-            }
+            var y = max * ROUTE_HEGHT_PERCENT;
             var z = -segm_y * sh;
             var v = { x:x, y:y, z:z };
             res[riter] = v;
