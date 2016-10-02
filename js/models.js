@@ -117,7 +117,7 @@ MODELS.Cloud = function(min_x, min_y, min_z, max_x, max_y, max_z) {
             s.position.y += (max_y * Math.random()) * (Math.random() < 0.5 ? -k:k);
             //s.position.z += (max_z * 0.5 - max_z * Math.random()) * 0.005;
         }
-    }
+    };
 };
 MODELS.Cloud.prototype = Object.create(THREE.Group.prototype);
 
@@ -130,19 +130,20 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
         var geometry = new THREE.Geometry();
 
         // Генерация первого ряда точек
-        for (var i = 0; i <= swidth; i++) {
-            geometry.vertices.push(new THREE.Vector3(x + i * sw, 0, z));
+        var i;
+        for (i = 0; i <= swidth; i++) {
+            geometry.vertices.push(new THREE.Vector3(x + i * sw, 0, -z));
         }
 
         // Генерация верхних рядов точек и описание поверхностей их индексами по секторам
         var id_0 = 0;
         for (var j = 1; j <= sheight; j++) {
             // Генерация первой точки верхнего ряда
-            geometry.vertices.push(new THREE.Vector3(x, 0, z + j * sh));
+            geometry.vertices.push(new THREE.Vector3(x, 0, -(z + j * sh)));
             // Генерация верхнего ряда точек
-            for (var i = 1; i <= swidth; i++) {
-                geometry.vertices.push(new THREE.Vector3(x + (i * sw - sw / 2.0), 0, z + (j * sh - sh / 2.0)));
-                geometry.vertices.push(new THREE.Vector3(x + i * sw, 0, z + j * sh));
+            for (i = 1; i <= swidth; i++) {
+                geometry.vertices.push(new THREE.Vector3(x + (i * sw - sw / 2.0), 0, -(z + (j * sh - sh / 2.0))));
+                geometry.vertices.push(new THREE.Vector3(x + i * sw, 0, -(z + j * sh)));
 
                 // Вычисление индексов точек для поверхностей текущего сектора
                 var id_1 = id_0 + ((j > 1) ? 2 : 1);
@@ -169,24 +170,46 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
     var HILL_RADIUS_PERCENT = 0.3;
     var HILL_HEIGHT_PERCENT = 0.3;
 
+    /** 
+     * Генерация холмов в пределах сетки тирейна
+     * faces,   - массив полигонов ландшафта
+     * vertices - массив вершин ландшафта
+     * sw,      - ширина сегмента
+     * sh,      - длинна сегмента
+     */
     function generateHill(faces, vertices, sw, sh) {
+        var s_width = sw * segments_width;
+        var s_height = sh * segments_height;
+
         // Генерация радиуса холма
-        var radius = Math.min(sw*segments_width, sh*segments_height) * Math.random() * HILL_RADIUS_PERCENT;
+        var radius = Math.min(s_width, s_height) * Math.random() * HILL_RADIUS_PERCENT;
         var segments_radius_w = Math.ceil(radius / sw);
         var segments_radius_h = Math.ceil(radius / sh);
 
         // Генерация высоты холма
-        var height = Math.min(Math.min(sw*segments_width, sh*segments_height) * Math.random() * HILL_HEIGHT_PERCENT, radius);
+        var height = Math.min(Math.min(s_width, s_height) * Math.random() * HILL_HEIGHT_PERCENT, radius);
 
         // Выбор произвольного сегмента
         var segment_x = Math.max(Math.floor(segments_width * Math.random() - 0.1), 0);
         var segment_y = Math.max(Math.floor(segments_height * Math.random() - 0.1), 0);
+        function correct_pos(p, r, m) {
+          var res = p;
+          if ((p - r) < 0) {
+            res = r;
+          }
+          if (m < (p + r)) {
+            res = m -  r;
+          }
+          return res;
+        }
+        segment_x = correct_pos(segment_x, segments_radius_w, segments_width);
+        segment_y = correct_pos(segment_y, segments_radius_h, segments_height);
 
         // Получить параметры зоны холма
-        var segments_radius_begin_x = Math.max(0, segment_x - segments_radius_w);
-        var segments_radius_begin_y = Math.max(0, segment_y - segments_radius_h);
-        var segments_radius_end_x = Math.min(segment_x + segments_radius_w + 1, segments_width);
-        var segments_radius_end_y = Math.min(segment_y + segments_radius_h + 1, segments_height);
+        var segments_radius_begin_x = segment_x - segments_radius_w;
+        var segments_radius_begin_y = segment_y - segments_radius_h;
+        var segments_radius_end_x = segment_x + segments_radius_w;
+        var segments_radius_end_y = segment_y + segments_radius_h;
 
         // Получение точки вершины холма
         var segments_face_id = segment_x * 4 + segment_y * 4 * segments_width;
@@ -230,20 +253,21 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
         hill(vertices[faces[segments_radius_begin_x * 4 + segments_radius_begin_y * 4 * segments_width].a]);
 
         // Посегментный проход по первому ряду точек зоны холма, исключая первый сегмент
-        for (var x = segments_radius_begin_x + 1; x < segments_radius_end_x; ++x) {
+        var x;
+        for (x = segments_radius_begin_x + 1; x < segments_radius_end_x; ++x) {
             faceEdgePoints(faces[x * 4 + segments_radius_begin_y * 4 * segments_width]);
         }
 
         // Проход по центральным сегментам зоны холма
         for (var y = segments_radius_begin_y + 1; y < segments_radius_end_y - 1; ++y) {
-            for (var x = segments_radius_begin_x; x < segments_radius_end_x - 1; ++x) {
+            for (x = segments_radius_begin_x; x < segments_radius_end_x - 1; ++x) {
                 faceEdgePoints(faces[x * 4 + y * 4 * segments_width]);
             }
             segmentFacePoints(faces[x * 4 + y * 4*segments_width]);
         }
 
         // Посегментный проход по последнему ряду точек зоны холма, исключая последний сегмент
-        for (var x = segments_radius_begin_x; x < segments_radius_end_x - 1; ++x) {
+        for (x = segments_radius_begin_x; x < segments_radius_end_x - 1; ++x) {
             var face_id = x * 4 + (segments_radius_end_y - 1) * 4 * segments_width;
             segmentDiagonalPoints(faces[face_id], faces[face_id + 1]);
         }
@@ -251,140 +275,63 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
     }
 
     var fx = [
-        0, 20, -20, -20, 20, 0
+        0, -4, 6, -8, 4, 2
     ];
 
-    //// Построение кривой
-    //function createCurve(pivots, points_num) {
-    //    // Генерация кривой для количества точек меньше или равное количеству опорных - бессмысленно
-    //    if (pivots.length <= points_num) {
-    //        // Сплайн кривая на 5 точек
-    //        function binom5(t, p0, s0, s1, s2, p1) {
-    //            var a = (1 - t);
-    //            return a * a * a * a * p0 +
-    //                4 * a * a * a * t * s0 +
-    //                6 * a * a * t * t * s1 +
-    //                4 * a * t * t * t * s2 +
-    //                t * t * t * t * p1;
-    //        }
-    //
-    //        // Сплайн кривая на 4 точки
-    //        function binom4(t, p0, s0, s1, p1) {
-    //            var a = (1 - t);
-    //            return a * a * a * p0 +
-    //                3 * a * a * t * s0 +
-    //                3 * a * t * t * s1 +
-    //                t * t * t * p1;
-    //        }
-    //
-    //        // Сплайн кривая на 3 точки
-    //        function binom3(t, p0, s, p1) {
-    //            var a = (1 - t);
-    //            return a * a * p0 +
-    //                2 * a * t * s +
-    //                t * t * p1;
-    //        }
-    //
-    //        var res = [];
-    //        var point_shift = points_num / pivots.length;
-    //
-    //        if (3 == pivots.length) { // Генерация для 3 опорных точек
-    //            var max = Math.floor(point_shift*3);
-    //            for (var i = 0; i < max; ++i) {
-    //                var t = i / (max - 1);
-    //                res[i] = binom5(t, pivots[0], pivots[0], pivots[1], pivots[2], pivots[2]);
-    //            }
-    //        } else { // Генерация для опорных точек больше 3
-    //            // Обработка первых 2 опорных точек
-    //            var start = 0;
-    //            var max = Math.floor(point_shift * 2);
-    //            for (var i = start; i < max; ++i) {
-    //                var t = i / (max - 1);
-    //                res[i] = binom4(t, pivots[0], pivots[0], pivots[1], (pivots[1] + pivots[2]) / 2);
-    //            }
-    //            // Обработка центральных опорных точек
-    //            for (var p = 2; p < (pivots.length - 2); ++p) {
-    //                start = max;
-    //                max = Math.floor(point_shift * (p + 1));
-    //                for (var i = start; i < max; ++i) {
-    //                    var t = (i - start) / (points_num - start);
-    //                    res[i] = binom3(t, (pivots[p - 1] + pivots[p]) / 2, pivots[p], (pivots[p] + pivots[p + 1]) / 2);
-    //                }
-    //            }
-    //            // Обработка последних 2 опорных точек
-    //            start = max;
-    //            var k = pivots.length - 1;
-    //            for (var i = start; i < points_num; ++i) {
-    //                var t = (i - start) / (points_num - start - 1);
-    //                res[i] = binom4(t, (pivots[k - 2] + pivots[k - 1]) / 2, pivots[k - 1], pivots[k], pivots[k]);
-    //            }
-    //        }
-    //    }
-    //    return res;
-    //}
-    //
-    //function setRoute(faces, vertices, route_sw, route_sh, route_arr) {
-    //    // Обработка первого ряда точек не требуется
-    //    var vc = route_sw + 1;
-    //
-    //    // Генерация верхних рядов точек и описание поверхностей их индексами по секторам
-    //    var x = route_arr[1];
-    //    for (var j = 1; j < route_sh; ++j) {
-    //        // Обработка первой точки верхнего ряда
-    //        vertices[vc++].x += x;
-    //        // Обработка верхнего ряда точек
-    //        for (var i = 1; i <= route_sw; ++i) {
-    //            vertices[vc++].x += x;
-    //            vertices[vc++].x += x;
-    //        }
-    //        x = route_arr[j + 1];
-    //    }
-    //    // Обработка предпоследнего ряда точек
-    //    for (var i = 1; i <= route_sw; ++i) {
-    //        vc++;
-    //        vertices[vc++].x += x;
-    //    }
-    //}
-
-    // Вычисление усреднённых вертикальных подъемов для ключевых точек горизонтальных изгибов трассы
-    function getSplinePivots(faces, vertices, segments_w, segments_h,  sw, sh, route_arr) {
+    /** 
+     * Вычисление усреднённых вертикальных подъемов для ключевых точек горизонтальных изгибов трассы
+     * segments_w, - ширина ландшафта в сегментах
+     * segments_h, - длинна ландшафта в сегментах
+     * sw,         - ширина сегмента
+     * sh,         - длинна сегмента
+     * route_arr,  - массив горизонтальных координат кривой трассы
+     * faces,      - массив полигонов ландшафта
+     * vertices    - массив вершин ландшафта
+     */
+    function getSplinePivots(segments_w, segments_h,  sw, sh, route_arr, faces, vertices) {
         var res = [];
         var delta_average = segments_h / (route_arr.length - 1); // смещение определятся количеством отрезков, а не точек
-        var aver_sum = 0;
         var aver_radius = delta_average / 2;
 
         for (var riter in  route_arr) {
-            // Получить точку изгиба трассы
-            var sx = Math.floor(route_arr[riter] / sw + segments_w / 2);
-            var sy = Math.floor(riter * delta_average);
+            // Получить сегмент изгиба трассы
+            var segm_x = Math.floor((route_arr[riter] / sw) + (segments_w * 0.5));
+            var segm_y = Math.floor(riter * delta_average);
 
             // Получить параметры зоны точки изгиба трассы
-            var segments_radius_begin_x = Math.max(0, sx - aver_radius);
-            var segments_radius_begin_y = Math.max(0, sy - aver_radius);
-            var segments_radius_end_x = Math.min(sx + aver_radius + 1, segments_w);
-            var segments_radius_end_y = Math.min(sy + aver_radius + 1, segments_h);
+            var segments_radius_begin_x = Math.max(0, segm_x - aver_radius);
+            var segments_radius_begin_y = Math.max(0, segm_y - aver_radius);
+            var segments_radius_end_x = Math.min(segm_x + aver_radius + 1, segments_w);
+            var segments_radius_end_y = Math.min(segm_y + aver_radius + 1, segments_h);
 
             // Получение средней высоты для данной позиции
             var max = 0;
-            var summ = 0;
+            var count = 0;
+            var aver_sum = 0;
             for (var j = segments_radius_begin_y; j < segments_radius_end_y; ++j) {
                 for (var i = segments_radius_begin_x; i < segments_radius_end_x; ++i) {
                     var face_id = i * 4 + j * 4 * segments_w;
                     var vert_id = faces[face_id].a;
                     max = Math.max(max, vertices[vert_id].y);
                     aver_sum += vertices[vert_id].y;
-                    ++summ;
+                    ++count;
                 }
             }
             // Получение координат ключевых точек трассы
-            var x = sx * sw;
+            var x = (segm_x - (segments_w * 0.5)) * sw;
             var y = 0;
-            if (aver_sum && summ) {
-                y = aver_sum / summ;
+            if (aver_sum && count) {
+                // if (riter == 0 || riter == (route_arr.length - 1)) {
+                //     y = Math.exp(aver_sum / count) * 0.1;
+                // } else {
+                //     y = Math.exp(aver_sum / count) * 0.5;
+                // }
+                y = aver_sum / count;
             }
-            var z = sy * sh;
-            res[riter] = { x:x, y:y, z:z };
-            //console.log('[' + max + '] ' + JSON.stringify(res[riter]));
+            var z = -segm_y * sh;
+            var v = { x:x, y:y, z:z };
+            res[riter] = v;
+            console.log(JSON.stringify(v));
         }
         return res;
     }
@@ -403,6 +350,7 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
             var row = [];
             var irow = 0;
             var face;
+            var i;
             if (!_cur_row) {
                 // Получить 0 ряд точек
                 for (irow = 0; irow < fw; ++irow) {
@@ -412,13 +360,13 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
                 row[irow] = vertices[face.b];
             } else if (_cur_row % 2) {
                 // Получить не чётный ряд точек
-                for (var i = _cur_fi; i < _cur_fi + fw; ++i) {
+                for (i = _cur_fi; i < _cur_fi + fw; ++i) {
                     face = faces[i * 4];
                     row[irow++] = vertices[face.a];
                 }
             } else {
                 // Получить чётный ряд точек
-                for (var i = _cur_fi; i < _cur_fi + fw; ++i) {
+                for (i = _cur_fi; i < _cur_fi + fw; ++i) {
                     face = faces[(i * 4) + 2];
                     row[irow++] = vertices[face.b];
                 }
@@ -431,26 +379,99 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
 
         this.curRow = function() {
             return _cur_row;
-        }
+        };
 
         this.getRows = function() {
             return (fh * 2) + 1 - start;
-        }
+        };
     };
+
+    function computeControlPointsOfCurves(koords) {
+        var p1 = [];
+        var p2 = [];
+        var n = koords.length - 1;
+        // RHS вектор
+        var a = [];
+        var b = [];
+        var c = [];
+        var r = [];
+        // Левый сегмент
+        a[0] = 0;
+        b[0] = 2;
+        c[0] = 1;
+        r[0] = koords[0] + 2 * koords[1];
+        // Средние сегменты
+        for (i = 1; i < n - 1; ++i) {
+            a[i] = 1;
+            b[i] = 4;
+            c[i] = 1;
+            r[i] = 4 * koords[i] + 2 * koords[i + 1];
+        }
+        // Правый сегмент
+        a[n - 1] = 2;
+        b[n - 1] = 7;
+        c[n - 1] = 0;
+        r[n - 1] = 8 * koords[n - 1] + koords[n];
+        // Получить Ax=b по алгоритму Томаса
+        for (i = 1; i < n; ++i) {
+            m = a[i] / b[i - 1];
+            b[i] = b[i] - m * c[i - 1];
+            r[i] = r[i] - m * r[i - 1];
+        }
+        // Вычислить P1
+        p1[n - 1] = r[n - 1] / b[n - 1];
+        for (i = n - 2; i >= 0; --i) {
+            p1[i] = (r[i] - c[i] * p1[i + 1]) / b[i];
+        }
+        // Вычислить P2
+        for (i = 0; i < n - 1; ++i) {
+            p2[i] = 2 * koords[i + 1] - p1[i + 1];
+        }
+        p2[n - 1] = 0.5 * (koords[n] + p1[n - 1]);
+        var res = [];
+        for (i = 0; i < n; ++i) {
+            res[i] = { p0:koords[i], p1:p1[i], p2:p2[i], p3:koords[i + 1] };
+        }
+        return res;
+    }
+
+    function binom4(t, p0, p1, p2, p3) {
+        var a = (1 - t);
+        return a * a * a * p0 +
+            3 * a * a * t * p1 +
+            3 * a * t * t * p2 +
+            t * t * t * p3;
+    }
 
     // Генерация трассы
     //var ROUTE_HKOEFF = 2;
     function setRoute(pivots, width_rou, swidth_rou, swidth_tir, sheight, tir_faces, tir_vertices, route_faces, route_vertices) {
         // Проход по опорным точкам
         if (pivots.length > 2) {
-            // Вычислить точки кривизны P1 и P2 для опорных точек
-
+            // Вычислить точки кривизны P1 и P2 для x координат опорных точек
+            var i;
+            var k1 = [];
+            for (i = 0; i < pivots.length; ++i) {
+                k1[i] = pivots[i].x;
+            }
+            var spt_x = computeControlPointsOfCurves(k1);
+            //console.log(JSON.stringify(spt_x));
+            // Вычислить точки кривизны P1 и P2 для y координат опорных точек
+            var k2 = [];
+            for (i = 0; i < pivots.length; ++i) {
+                k2[i] = pivots[i].y;
+            }
+            var spt_y = computeControlPointsOfCurves(k2);
+            //console.log(JSON.stringify(spt_y));
+            // Итератор по рядам сетки
             var vrfi = new VerticesRowsForwardIterator(0, swidth_rou, sheight, route_faces, route_vertices);
             // Получить дробное количество точек трассы в пределах отрезка опорных точек
             var hshift = vrfi.getRows() / (pivots.length - 1); // смещение определятся количеством отрезков, а не точек;
             var beg_pos = 0;
             var row;
-            for (var i = 0; i < pivots.length - 1; ++i) {
+            var left_rou_x = - (width_rou * 0.5);
+            var sw_rou = width_rou / swidth_rou;
+            for (i = 0; i < pivots.length - 1; ++i) {
                 var ra = pivots[i];     // стартовая точка отрезка кривой
                 var rb = pivots[i + 1]; // завершающая точка отрезка кривой
                 // Обработка точек трассы в пределах опорного отрезка
@@ -458,13 +479,25 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
                 // Проход по рядам в пределах отрезка
                 var count = end_pos - beg_pos;
                 for (var j = 0; j < count; ++j) {
-                    var t = j / count;
-                    row = vrfi.inc();
-                    console.log('  >' + t + ' | ' + JSON.stringify(row));
                     // Вычислить кривизну для x координаты точек трассы
-
+                    var b4_x = binom4(j / count, spt_x[i].p0, spt_x[i].p1, spt_x[i].p2, spt_x[i].p3);
                     // Вычислить кривизну для y координаты точек трассы
+                    var b4_y = binom4(j / count, spt_y[i].p0, spt_y[i].p1, spt_y[i].p2, spt_y[i].p3);
+                    row = vrfi.inc();
+                    var is_even = (row.length % 2) === 0;
+                    var lrx = left_rou_x;
+                    if (is_even) {
+                        lrx += (sw_rou * 0.5);
+                    }
+                    for (var v = 0; v < row.length; ++v) {
+                        // Вычисление значений x по ширине трассы
+                        row[v].x = b4_x + lrx;
+                        lrx += sw_rou;
+                        row[v].y = b4_y;
+                        //console.log(JSON.stringify(row[v]));
+                    }
                 }
+                //console.log(JSON.stringify(tx));
                 beg_pos = end_pos;
             }
         } else {
@@ -474,23 +507,34 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
 
     var sw = width / segments_width;
     var sh = height / segments_height;
-    var _terrain_geometry = new Grid(sw, sh, -width / 2, -height / 2, segments_width, segments_height);
-    for (var i = 0; i < 20; ++i) {
+    var _terrain_geometry = new Grid(sw, sh, -width * 0.5, -height * 0.5, segments_width, segments_height);
+    for (var i = 0; i < 80; ++i) {
         generateHill(_terrain_geometry.faces, _terrain_geometry.vertices, sw, sh);
     }
     //_terrain_geometry.computeBoundingSphere();
 
-    var spline_pivots = getSplinePivots(_terrain_geometry.faces, _terrain_geometry.vertices,
-                                        segments_width, segments_height, sw, sh, fx);
+    var spline_pivots = getSplinePivots(segments_width, segments_height, sw, sh, fx,
+                                        _terrain_geometry.faces, _terrain_geometry.vertices);
+
+    // Тестовые объекты
+    var darkMaterial = new THREE.MeshBasicMaterial( { color: 0x7777cc } );
+    var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x0000ff, wireframe: true, transparent: true } );
+    var multiMaterial = [ darkMaterial, wireframeMaterial ];
+    for(var sp in spline_pivots) {
+        var octagedron = new THREE.OctahedronGeometry(1, 0);
+        var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
+        var pos = spline_pivots[sp];
+        shape.position.set(pos.x, pos.y, pos.z + height * 0.5);
+        _scope.add(shape);
+    }
+
     var tir_sh = segments_width; // Число сегментов тирейна в ширину.
     var route_w = 4; // Ширина трассы
     var route_h = height; // Длинна проекции трассы
-    var route_sw = 4; // Число сегментов трассы в ширину
+    var route_sw = route_w * sw; // Число сегментов трассы в ширину
     //var route_sh = segments_height * ROUTE_HKOEFF; // Число сегментов в длинну больше числа сегментов тирейна в длинну.
     var route_sh = segments_height; // Число сегментов трассы в длинну.
-    var _route_geometry = new Grid(route_w / route_sw, route_h / route_sh, -route_w / 2, -route_h / 2, route_sw, route_sh);
-    //var route = createCurve(fx, route_sh);
-    //setRoute(_route_geometry.faces, _route_geometry.vertices, route_sw, route_sh, route);
+    var _route_geometry = new Grid(route_w / route_sw, route_h / route_sh, -route_w * 0.5, -route_h * 0.5, route_sw, route_sh);
     setRoute(spline_pivots, route_w, route_sw, tir_sh, segments_height,
              _terrain_geometry.faces, _terrain_geometry.vertices,
              _route_geometry.faces, _route_geometry.vertices);
@@ -500,12 +544,12 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
 
     // Создание итоговой сетки и применение к ней материала
     ////var _material = new THREE.MeshBasicMaterial({ color:0x00ff00 });
-    //var _material = new THREE.MeshBasicMaterial({ color:0x00ff00, wireframe: true, transparent: true });
-    //var _mesh = new THREE.Mesh(_terrain_geometry, _material);
-    //_scope.add(_mesh);
+    var _mat_tir = new THREE.MeshBasicMaterial({ color:0x00ff00, wireframe: true, transparent: true });
+    var _mesh_tir = new THREE.Mesh(_terrain_geometry, _mat_tir);
+    _scope.add(_mesh_tir);
 
-    //var _material = new THREE.MeshBasicMaterial({ color:0x0000ff, wireframe: true, transparent: true });
-    //var _mesh = new THREE.Mesh(_route_geometry, _material);
-    //_scope.add(_mesh);
+    var _mat_route = new THREE.MeshBasicMaterial({ color:0x0000ff, wireframe: true, transparent: true });
+    var _mesh_route = new THREE.Mesh(_route_geometry, _mat_route);
+    _scope.add(_mesh_route);
 };
 MODELS.Terrain.prototype = Object.create(THREE.Group.prototype);
