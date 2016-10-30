@@ -386,7 +386,7 @@ AEROBIKE.Game = function(renderer, on_return_game) {
 
     var _group = new THREE.Group();
 
-    _group.add(new MODELS.Terrain(20, 100, 20, 100));
+    _group.add(new MODELS.Terrain(70, 600, 140, 1200));
     _group.position.y = -5;
     _scope.scene.add(_group);
 
