@@ -445,7 +445,12 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
         p2[n - 1] = 0.5 * (koords[n] + p1[n - 1]);
         var res = [];
         for (i = 0; i < n; ++i) {
-            res[i] = { p0:koords[i], p1:p1[i], p2:p2[i], p3:koords[i + 1] };
+            res[i] = { 
+                p0:koords[i], 
+                p1:p1[i], 
+                p2:p2[i], 
+                p3:koords[i + 1] 
+            };
         }
         return res;
     }
@@ -484,7 +489,7 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
         var rou_end_id; // Идентификатор последней точки правого края трассы
         var centred_beg_x = x[0] + tir_width * 0.5; // Смещение левого края левой обочины в центр координат
         var centred_rou_beg_x = x[1] + tir_width * 0.5; // Смещение левого края левой стороны трассы в центр координат
-        var oaahalf_rou_w = rou_width * 4; // Полторы ширины трассы (one and a half)
+        var oaahalf_rou_w = rou_width * 4; // 2 ширины трассы (one and a half)
         if (is_even_row) { // Четный ряд точек относится к точкам в центре сегментов сетки
             beg_id = Math.floor(centred_beg_x / sw); 
             rou_beg_id = Math.floor(centred_rou_beg_x / sw);
@@ -516,14 +521,13 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
             // Вычислить точки кривизны P1 и P2 для 'y' координат опорных точек
             var y = [];
             y[0] = row_tir[beg_id].y;
-            y[1] = row_rou[0].y; // tir_row[rou_beg_id].y;
-            y[2] = row_rou[row_rou.length - 1].y; // tir_row[rou_end_id].y;
+            y[1] = row_rou[0].y;
+            y[2] = row_rou[row_rou.length - 1].y;
             y[3] = row_tir[end_id].y;
             var spt = computeControlPointsOfCurves(y); // Полученный набор опорных точек применим только к обочинам
             var yc = [];
             yc[0] = y[1];
             yc[1] = y[2];
-            var sptc = computeControlPointsOfCurves(yc); // Полученный набор опорных точек применим только к полотну трассs, которое может иметь поперчный наклон
             if (spt.length === y.length - 1) { // Количество описателей отрезков кривых должно соответствовать количеству отрезков
                 // Построить кривую обочины слева от трассы
                 var j;
@@ -534,7 +538,7 @@ MODELS.Terrain = function(width, height, segments_width, segments_height) {
                     b4_y = binom4(j / count, spt[0].p0, spt[0].p1, spt[0].p2, spt[0].p3);
                     row_tir[i++].y = b4_y;
                 }
-                // Построить "кривую" под полотном трассы
+                // Построить "прямую" под полотном трассы
                 i = rou_beg_id;
                 count  =  rou_end_id - rou_beg_id;
                 var sub = y[2] - y[1];
