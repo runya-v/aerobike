@@ -383,17 +383,26 @@ AEROBIKE.Game = function(renderer, on_return_game) {
     document.getElementById("right_game_btn").addEventListener("click", function() {}, false);
 
     // Загрузка ландшафта
+    var light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(0, 1, 0).normalize();
+    _scope.scene.add(new THREE.AmbientLight(0xffffff));
+    _scope.scene.add(light);
 
     var _group = new THREE.Group();
-
-    _group.add(new MODELS.Terrain(70, 600, 140, 1200));
+    var _tir_conf = {
+      width: 70,
+      height: 600,
+      segments_width: 140,
+      segments_height: 1200
+    };
+    _group.add(new MODELS.Terrain(tir_conf));
     _group.position.y = -5;
     _scope.scene.add(_group);
 
-    _scope.scene.add(new THREE.AmbientLight(0xffffff));
-    var directionalLight = new THREE.DirectionalLight(0xffffff, 10);
-    directionalLight.position.set(0, 1, 0).normalize();
-    _scope.scene.add(directionalLight);
+    // _scope.scene.add(new THREE.AmbientLight(0xffffff));
+    // var directionalLight = new THREE.DirectionalLight(0xffffff, 10);
+    // directionalLight.position.set(0, 1, 0).normalize();
+    
 
     //_scope.scene.add(new THREE.AmbientLight(0xffffff));
     //_scope.scene.add(new THREE.SpotLight(0xffffff));
@@ -502,6 +511,7 @@ AEROBIKE.Main = function() {
     _renderer.setSize(window.innerWidth, window.innerHeight);
     _renderer.gammaInput = true;
     _renderer.gammaOutput = true;
+    _renderer.shadowMapEnabled = true;
 
     var scene_container = document.getElementById("scene_container");
     scene_container.appendChild(_renderer.domElement);
