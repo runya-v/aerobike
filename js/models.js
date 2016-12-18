@@ -353,57 +353,6 @@ MODELS.Terrain = function(conf) {
         return fx;      
     }
 
-// TODO
-
-    /** 
-     * Вычисление процента вертикальных подъемов от максимальной в пределах зоны, для ключевых точек горизонтальных изгибов трассы 
-     * segments_w, - ширина ландшафта в сегментах
-     * segments_h, - длинна ландшафта в сегментах
-     * sw,         - ширина сегмента
-     * sh,         - длинна сегмента
-     * route_arr,  - массив горизонтальных координат кривой трассы
-     * faces,      - массив полигонов ландшафта
-     * vertices    - массив вершин ландшафта
-     */
-    function getSplinePivots(segments_w, segments_h,  sw, sh, route_arr, faces, vertices) {
-        var res = [];
-        var delta_average = segments_h / (route_arr.length - 1); // смещение определятся количеством отрезков, а не точек
-        var aver_radius = delta_average * 0.25; // область для нахождения максимальной точки в радиусе 1/4 от длинны отрезка трассы
-
-        for (var riter in route_arr) {
-            // Получить сегмент изгиба трассы
-            var segm_x = Math.floor((route_arr[riter] / sw) + (segments_w * 0.5));
-            var segm_y = Math.floor(riter * delta_average);
-
-            // Получить параметры зоны точки изгиба трассы
-            var segments_radius_begin_x = Math.floor(Math.max(1, segm_x - aver_radius));
-            var segments_radius_begin_y = Math.floor(Math.max(1, segm_y - aver_radius));
-            var segments_radius_end_x = Math.floor(Math.min(segm_x + aver_radius, segments_w - 1));
-            var segments_radius_end_y = Math.floor(Math.min(segm_y + aver_radius, segments_h - 1));
-
-            // Получение максимальной высоты для данной позиции
-            var max = 0;
-            for (var j = segments_radius_begin_y; j < segments_radius_end_y; ++j) {
-                for (var i = segments_radius_begin_x; i < segments_radius_end_x; ++i) {
-                    var face_id = i * 4 + j * 4 * segments_w;
-                    var vert_id = faces[face_id].a;
-                    max = Math.max(max, vertices[vert_id].y);
-                }
-            }
-            // Получение координат ключевых точек трассы
-            var x = (segm_x - (segments_w * 0.5)) * sw;
-            var y = max * ROUTE_HEGHT_PERCENT;
-            var z = -segm_y * sh;
-            var v = { x:x, y:y, z:z };
-            res[riter] = v;
-            console.log(JSON.stringify(v));
-        }
-        // Первая и последние точки должны быть на нулевой высоте
-        res[0].y = 0;
-        res[route_arr.length - 1].y = 0;
-        return res;
-    }
-
     /** 
      * Итератор по рядам точек 
      * start,   - стартовый идентификатор ряда точек сетки
@@ -460,180 +409,76 @@ MODELS.Terrain = function(conf) {
             return (fh * 2) + 1 - start;
         };
     };
-
-    /** 
-     * Генерация обочин трассы для поперчного ряда точек тирейна
-     * is_even_row - флаг чётного ряда точек
-     * sw          - ширина сегмента
-     * rou_point   - центральная точка трассы на редактируемом ряду
-     * rou_width   - ширина трассы
-     * tir_width   - ширина тирейна
-     * row_rou     - массив ряда точек трассы
-     * row_tir     - массив ряда точек тирейна
-     */
-    function verges(is_even_row, sw, rou_point, rou_width, tir_width, row_rou, row_tir) {
-        // Получение опорных точек кривой для обочин трассы
-        var half_rou_width = rou_width * 0.5;
-        var x = [];
-        x[0] = rou_point - rou_width * 2;
-        x[1] = rou_point - half_rou_width;
-        x[2] = rou_point + half_rou_width;
-        x[3] = rou_point + rou_width * 2;
-        // Вычислить id стартовой и коенчной точек в ряду точек тирейна
-        var beg_id; // Идентификатор первой точки левой обочины
-        var end_id; // Идентификатор последней точки правой обочины
-        var rou_beg_id; // Идентификатор первой точки левого края трассы
-        var rou_end_id; // Идентификатор последней точки правого края трассы
-        var centred_beg_x = x[0] + tir_width * 0.5; // Смещение левого края левой обочины в центр координат
-        var centred_rou_beg_x = x[1] + tir_width * 0.5; // Смещение левого края левой стороны трассы в центр координат
-        var oaahalf_rou_w = rou_width * 4; // 2 ширины трассы (one and a half)
-        if (is_even_row) { // Четный ряд точек относится к точкам в центре сегментов сетки
-            beg_id = Math.floor(centred_beg_x / sw); 
-            rou_beg_id = Math.floor(centred_rou_beg_x / sw);
-            rou_end_id = Math.floor((centred_rou_beg_x + rou_width) / sw);
-            end_id = Math.floor((centred_beg_x + oaahalf_rou_w) / sw);
-        } else {
-            var half_sw = sw * 0.5; // Половина ширины сегмента
-            var cbx_s_hsw = centred_beg_x + half_sw; // Смещение до крайнего ребра левой обочины для координат центров сегментов сетки
-            var crbx_s_hsw = centred_rou_beg_x + half_sw; // Смещение до крайнего ребра левого края трассы для координат центров сегментов сетки
-            beg_id = Math.floor(cbx_s_hsw / sw); 
-            rou_beg_id = Math.floor(crbx_s_hsw / sw);
-            rou_end_id = Math.floor((crbx_s_hsw + rou_width) / sw);
-            end_id = Math.floor((cbx_s_hsw + oaahalf_rou_w) / sw);
-        }
-        // Корректировка индексов, во избежании выхода за разумные минимальные подмножества обрабатываемых точек
-        if (beg_id < 0) {
-            beg_id = 0;
-        }
-        if (rou_beg_id < beg_id) {
-            rou_beg_id = beg_id;
-        }
-        if (row_tir.length <= rou_end_id) {
-            rou_end_id = row_tir.length - 1;
-        }
-        if (row_tir.length <= end_id) {
-            end_id = row_tir.length - 1;
-        }
-        if (beg_id + 3 < end_id) { // Минимальное количество обрабатываемых точек 4
-            // Вычислить точки кривизны P1 и P2 для 'y' координат опорных точек
-            var y = [];
-            y[0] = row_tir[beg_id].y;
-            y[1] = row_rou[0].y;
-            y[2] = row_rou[row_rou.length - 1].y;
-            y[3] = row_tir[end_id].y;
-            var spt = computeControlPointsOfCurves(y); // Полученный набор опорных точек применим только к обочинам
-            var yc = [];
-            yc[0] = y[1];
-            yc[1] = y[2];
-            if (spt.length === y.length - 1) { // Количество описателей отрезков кривых должно соответствовать количеству отрезков
-                // Построить кривую обочины слева от трассы
-                var j;
-                var b4_y;
-                var i = beg_id;
-                var count  =  rou_beg_id - beg_id;
-                for (j = 0; j <= count; ++j) {
-                    b4_y = binom4(j / count, spt[0].p0, spt[0].p1, spt[0].p2, spt[0].p3);
-                    row_tir[i++].y = b4_y;
-                }
-                // Построить "прямую" под полотном трассы
-                i = rou_beg_id;
-                count  =  rou_end_id - rou_beg_id;
-                var sub = y[2] - y[1];
-                var k =  sub / row_rou.length;
-                for (j = 0; j <= count; ++j) {
-                    row_tir[i++].y = (y[1] + (count - j) * k) - 0.1;
-                }
-                // Построить кривую обочины справа от трассы
-                i = rou_end_id;
-                count  =  end_id - rou_end_id;
-                for (j = 0; j <= count; ++j) {
-                    b4_y = binom4(j / count, spt[2].p0, spt[2].p1, spt[2].p2, spt[2].p3);
-                    row_tir[i++].y = b4_y;
-                }
-                console.log(JSON.stringify(row_tir));
-            }
-        }
-    }
     
     /** 
-     * Генерация трассы
-     * pivots         - массив опорных точек изгиба трассы
-     * width_rou      - ширина трассы
-     * width_tir      - ширина тирейна
-     * swidth_rou     - ширина трассы в сегментах
-     * swidth_tir     - ширина тирейна в сегментах
-     * sheight        - длинна трассы & тирейна в сегментах
-     * tir_faces      - массив полигонов сетки тирейна
-     * tir_vertices   - массив вершин сетки тирейна
-     * route_faces    - массив полигонов сетки полотна трассы
-     * route_vertices - массив вершин сетки полотна трассы
+     * Вычисление процента вертикальных подъемов от максимальной в пределах зоны, для ключевых точек горизонтальных изгибов трассы 
+     * height_map    - Карта высот тирейна,
+     * width: conf   - Ширина тирейна,
+     * height: conf  - Длинна тирейна,
+     * route_pivots  - Массив опорных точек трассы     
      */
-    function setRoute(pivots, width_tir, width_rou, swidth_rou, swidth_tir, sheight, tir_faces, tir_vertices, route_faces, route_vertices) {
-        // Проход по опорным точкам
-        if (pivots.length > 2) {
-            // Вычислить точки кривизны P1 и P2 для 'x' координат опорных точек
-            var i;
-            var k1 = [];
-            for (i = 0; i < pivots.length; ++i) {
-                k1[i] = pivots[i].x;
-            }
-            var spt_x = computeControlPointsOfCurves(k1);
-            // Вычислить точки кривизны P1 и P2 для 'y' координат опорных точек
-            var k2 = [];
-            for (i = 0; i < pivots.length; ++i) {
-                k2[i] = pivots[i].y;
-            }
-            var spt_y = computeControlPointsOfCurves(k2);
-            // Итератор по рядам сетки полотна трассы
-            var vrfi_rou = new VerticesRowsForwardIterator(0, swidth_rou, sheight, route_faces, route_vertices);
-            // Итератор по рядам сетки тирейна
-            var vrfi_tir = new VerticesRowsForwardIterator(0, swidth_tir, sheight, tir_faces, tir_vertices);
-            // Получить дробное количество точек трассы в пределах отрезка опорных точек
-            var hshift = vrfi_rou.getRows() / (pivots.length - 1); // смещение определятся количеством отрезков, а не количеством точек;
-            var beg_pos = 0;
-            var row_rou;
-            var row_tir;
-            var left_rou_x = - (width_rou * 0.5);
-            var rsift_tir = (width_tir * 0.5);
-            var sw_rou = width_rou / swidth_rou; // Ширина сегмента трассы
-            var sw_tir = width_tir / swidth_tir; // Ширина сегмента тирейна
-            for (i = 0; i < pivots.length - 1; ++i) {
-                var ra = pivots[i];     // стартовая точка отрезка кривой
-                var rb = pivots[i + 1]; // завершающая точка отрезка кривой
-                // Обработка точек трассы в пределах опорного отрезка
-                var end_pos = Math.floor(hshift * (i + 1));
-                // Проход по рядам в пределах отрезка
-                var count = end_pos - beg_pos;
-                for (var j = 0; j < count; ++j) {
-                    // Вычислить кривизну для x координаты точек трассы
-                    var b4_x = binom4(j / count, spt_x[i].p0, spt_x[i].p1, spt_x[i].p2, spt_x[i].p3);
-                    // Вычислить кривизну для y координаты точек трассы
-                    var b4_y = binom4(j / count, spt_y[i].p0, spt_y[i].p1, spt_y[i].p2, spt_y[i].p3);
-                    row_rou = vrfi_rou.inc();
-                    var is_even = (row_rou.length % 2) === 0; // Чётное количество точек ряда для трассы всегда содержит центральные точки сегментов
-                    var lrx = left_rou_x; // отсчёт координат с левой стороны трассы
-                    if (is_even) {
-                        lrx += (sw_rou * 0.5); // смещение к центру трассы до центральной точки сегмента
-                    }
-                    row_tir = vrfi_tir.inc();
-                    // Вычисление значений x по ширине трассы
-                    for (var v = 0; v < row_rou.length; ++v) {
-                        row_rou[v].x = b4_x + lrx;
-                        lrx += sw_rou;
-                        row_rou[v].y = b4_y;
-                    }
-                    // Коррекция тирейна под полотно трассы - построение кривых обочин
-                    verges(is_even, sw_tir, b4_x, width_rou, width_tir, row_rou, row_tir);
+    function getSplinePivots(conf) {
+        var res = [];
+        var delta_average = conf.height / (conf.route_pivots.length - 1); // смещение определятся количеством отрезков, а не точек
+        var aver_radius = delta_average * 0.25; // область для нахождения максимальной точки в радиусе 1/4 от длинны отрезка трассы
+
+        for (var riter in conf.route_pivots) {
+            // Получить получить координату точки трассы наиболее близкую к опорной  
+            var mx = Math.floor(conf.route_pivots[riter] + (conf.width * 0.5));
+            var my = Math.floor(riter * delta_average);
+            // Получить параметры зоны точки изгиба трассы
+            var rbeg_x = Math.max(0, Math.floor(mx - aver_radius));
+            var rbeg_y = Math.max(0, Math.floor(my - aver_radius));
+            var rend_x = Math.min(Math.floor(mx + aver_radius), conf.width);
+            var rend_y = Math.min(Math.floor(my + aver_radius), conf.height);
+            // Получение максимальной высоты для данной позиции
+            var max = 0;
+            for (var j = rbeg_y; j < rend_y; ++j) {
+                for (var i = rbeg_x; i < rend_x; ++i) {
+                    var map_id = i + j * conf.width;
+                    max = Math.max(max, conf.height_map[map_id]);
                 }
-                beg_pos = end_pos;
             }
-        } else {
-            console.log('ERR: Опорных точек должно быть больше 2');
+            // Получение координат ключевых точек трассы
+            var vertex = { 
+              x: mx - (conf.width * 0.5), 
+              y: max * ROUTE_HEGHT_PERCENT, 
+              z: -my 
+            };
+            res[riter] = vertex;
+            console.log(JSON.stringify(v));
+        }
+        // Первая и последние точки должны быть на нулевой высоте
+        res[0].y = 0;
+        res[conf.route_pivots.length - 1].y = 0;
+        return res;
+    }
+
+    /** 
+     * Генерация трассы
+     * height_map    - Карта высот тирейна,
+     * width: conf   - Ширина тирейна,
+     * height: conf  - Длинна тирейна,
+     * route_pivots  - Массив опорных точек трассы     
+     */
+    function generateRoute(conf) {
+        // Получить оптимизированняе вершины для опорных точек трассы
+        var pivot_verts = getSplinePivots(conf);
+        // Пройти по карте ввысот и откорректировать высоты        
+        for (var j = 0; j < conf.height; ++j) {
+            for (var i = 0; i < conf.width; ++i) {
+                var map_id = i + j * conf.width;
+                
+            }
         }
     }
+
+// TODO
+// 1. Убрать смещение опорных точек в центр координат
 
     // Построение игрового пространства
     
+    // Генерация сетки тирейна
     var grid_conf = {
         segment_w: conf.width / conf.segments_width, 
         segment_h: conf.height / conf.segments_height, 
@@ -643,23 +488,29 @@ MODELS.Terrain = function(conf) {
         segments_height: conf.segments_height
     };
     var _terrain_geometry = new Grid(grid_conf);
+    
+    // Генерация Холмов
     var hm_conf = {
         hills: NUM_HILLS,
         width: conf.segments_width,
         height: conf.segments_height
     };
     var _height_map = new HegthMap(hm_conf);
+    
+    // Генерация опорных точек трассы
     var rp_conf = {
         width: conf.width,
         min_points: MIN_ROUTE_PIVOUT_COUNT,
         max_points: MAX_ROUTE_PIVOUT_COUNT
     };
-    var _rute_pivots = new Pivots();
+    var _route_pivots = new Pivots();
+    
+    // Построение трассы
     var route_conf = {
         height_map: _height_map,
         width: conf.segments_width,
         height: conf.segments_height,
-        rute_pivots: _rute_pivots
+        route_pivots: _route_pivots
     };
     generateRoute(route_conf);
     
