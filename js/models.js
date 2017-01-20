@@ -122,10 +122,10 @@ MODELS.Cloud = function(min_x, min_y, min_z, max_x, max_y, max_z) {
 MODELS.Cloud.prototype = Object.create(THREE.Group.prototype);
 
 
-/** 
+/**
  * Генератор трассы
  * width           - Ширина холмистого ландшафта
- * height          - Длинна холмистого ландшафта 
+ * height          - Длинна холмистого ландшафта
  * segments_width  - Ширина сегмента сетки поверхности
  * segments_height - длинна сегмента сетки поверхности
  */
@@ -142,7 +142,7 @@ MODELS.Terrain = function(conf) {
     var MAX_ROUTE_PIVOUT_COUNT = 20; ///< Максимальное число поворотов трассы
 
     /*
-     *  segment_w       - Ширина сегмента: width / segments_width, 
+     *  segment_w       - Ширина сегмента: width / segments_width,
      *  segment_h       - Длинна сегмента: height / segments_height, 
      *  pos_x           - Смещение в начало координат: -width * 0.5, 
      *  pos_z           - Смещение в начало координат: -height * 0.5, 
@@ -259,7 +259,7 @@ MODELS.Terrain = function(conf) {
         }
         return d;
     };
-    
+
     /** 
      * Вычисление точек для направляющих векторов лежащих на касательной к кривой в заданной точке 
      * koords - Длинна сегмента
@@ -308,7 +308,7 @@ MODELS.Terrain = function(conf) {
         p2[n - 1] = 0.5 * (koords[n] + p1[n - 1]);
         var res = [];
         for (i = 0; i < n; ++i) {
-            res[i] = { 
+            res[i] = {
                 p0:koords[i], 
                 p1:p1[i], 
                 p2:p2[i], 
@@ -318,7 +318,7 @@ MODELS.Terrain = function(conf) {
         return res;
     }
 
-    /** 
+    /**
      * Вычисление значения координаты для 4 для 4- х точек, описывающих отрезок кривой 
      * t      - Прочент от общего отрезка кривой
      * p0     - Координата начала отрезка кривой
@@ -328,7 +328,7 @@ MODELS.Terrain = function(conf) {
     function binom4(conf) {
         var a   = (1 - conf.t);
         var at3 = a * conf.t * 3;
-        return conf.p0 * a      * a      * a + 
+        return conf.p0 * a      * a      * a +
                conf.p1 * at3    * a + 
                conf.p2 * at3    * conf.t + 
                conf.p3 * conf.t * conf.t * conf.t;
@@ -350,11 +350,11 @@ MODELS.Terrain = function(conf) {
             fx[i] = Math.floor(conf.width * Math.random() + 0.5) - conf.width * 0.5;
         }
         fx[count] = 0; ///< Последняя точка всегда в центре
-        return fx;      
+        return fx;
     }
 
-    /** 
-     * Итератор по рядам точек 
+    /**
+     * Итератор по рядам точек
      * start,   - стартовый идентификатор ряда точек сетки
      * fw,      - количесво сегментов сетки в ширину
      * fh,      - количесво сегментов сетки в длинну
@@ -409,7 +409,7 @@ MODELS.Terrain = function(conf) {
             return (fh * 2) + 1 - start;
         };
     };
-    
+
     /** 
      * Вычисление процента вертикальных подъемов от максимальной в пределах зоны, для ключевых точек горизонтальных изгибов трассы 
      * height_map    - Карта высот тирейна,
@@ -454,7 +454,7 @@ MODELS.Terrain = function(conf) {
         return res;
     }
 
-    /** 
+    /**
      * Генерация трассы
      * height_map    - Карта высот тирейна,
      * width: conf   - Ширина тирейна,
@@ -471,7 +471,8 @@ MODELS.Terrain = function(conf) {
                 
             }
         }
-    }
+        return geometry;
+    };
 
 // TODO
 // 1. Убрать смещение опорных точек в центр координат
@@ -504,7 +505,7 @@ MODELS.Terrain = function(conf) {
         max_points: MAX_ROUTE_PIVOUT_COUNT
     };
     var _route_pivots = new Pivots();
-    
+
     // Построение трассы
     var route_conf = {
         height_map: _height_map,
@@ -538,7 +539,7 @@ MODELS.Terrain = function(conf) {
     // tir_texture.wrapT = THREE.RepeatWrapping;
     // tir_texture.repeat.set(2, 2);
     // var tir_bump = new THREE.ImageUtils.loadTexture('images/bumpmap.jpg');
-    // var _mat_tir = new THREE.MeshPhongMaterial({ 
+    // var _mat_tir = new THREE.MeshPhongMaterial({
     //     map:tir_texture,
     //     mapScale:10,
     //     bumpMap:tir_bump,
