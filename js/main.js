@@ -375,12 +375,12 @@ AEROBIKE.Game = function(renderer, on_return_game) {
     var _display = new UTILS.Display(document.getElementById("game_screen"));
     var _controls;
 
-    document.getElementById("game_garage_img_bt").addEventListener("click", on_return_game, false);
-
-    document.getElementById("up_game_btn").addEventListener("click", function() {}, false);
-    document.getElementById("down_game_btn").addEventListener("click", function() {}, false);
-    document.getElementById("left_game_btn").addEventListener("click", function() {}, false);
-    document.getElementById("right_game_btn").addEventListener("click", function() {}, false);
+    // document.getElementById("game_garage_img_bt").addEventListener("click", on_return_game, false);
+    //
+    // document.getElementById("up_game_btn").addEventListener("click", function() {}, false);
+    // document.getElementById("down_game_btn").addEventListener("click", function() {}, false);
+    // document.getElementById("left_game_btn").addEventListener("click", function() {}, false);
+    // document.getElementById("right_game_btn").addEventListener("click", function() {}, false);
 
     // Загрузка ландшафта
     var light = new THREE.DirectionalLight(0xffffff, 1);
@@ -390,10 +390,11 @@ AEROBIKE.Game = function(renderer, on_return_game) {
 
     var _group = new THREE.Group();
     var _tir_conf = {
-      width: 70,
-      height: 600,
-      segments_width: 140,
-      segments_height: 1200
+      route_width: 4,
+      width: 30, //7,
+      height: 50, //60,
+      segments_width: 30, //14,
+      segments_height: 50 //120
     };
     _group.add(new MODELS.Terrain(tir_conf));
     _group.position.y = -5;
