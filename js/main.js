@@ -391,10 +391,10 @@ AEROBIKE.Game = function(renderer, on_return_game) {
     var _group = new THREE.Group();
     var _tir_conf = {
       route_width: 4,
-      width: 30, //7,
-      height: 50, //60,
-      segments_width: 30, //14,
-      segments_height: 50 //120
+      width: 7,
+      height: 60,
+      segments_width: 14,
+      segments_height: 120
     };
     _group.add(new MODELS.Terrain(tir_conf));
     _group.position.y = -5;

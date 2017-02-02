@@ -141,7 +141,7 @@ MODELS.Terrain = function(conf) {
     var MIN_ROUTE_PIVOUT_COUNT = 5;  ///< Минимальное число поворотов трассы
     var MAX_ROUTE_PIVOUT_COUNT = 20; ///< Максимальное число поворотов трассы
 
-    /*
+    /**
      * Генерация карты высот
      * hills - Необходимое число холмов
      * width - Ширина в сегментах
@@ -365,29 +365,29 @@ MODELS.Terrain = function(conf) {
      */
     function getSplinePivots(conf) {
         var res = [];
-        var delta_average = conf.segm_height / (conf.route_pivots.length - 1); // смещение определятся количеством отрезков, а не точек
+        var delta_average = conf.height / (conf.route_pivots.length - 1); // смещение определятся количеством отрезков, а не точек
         var aver_radius = delta_average * 0.25; // область для нахождения максимальной точки в радиусе 1/4 от длинны отрезка трассы
-
+        // Проход по X - составляющим опорных точек
         for (var riter = 0; riter < conf.route_pivots.length; ++riter) {
-            // Получить получить координату точки трассы наиболее близкую к опорной
-            var mx = Math.floor(conf.route_pivots[riter] + (conf.segm_width * 0.5));
+            // Получить координату точки трассы наиболее близкую к опорной
+            var mx = Math.floor(conf.route_pivots[riter] + (conf.width * 0.5));
             var my = Math.floor(riter * delta_average);
             // Получить параметры зоны точки изгиба трассы
             var rbeg_x = Math.max(0, Math.floor(mx - aver_radius));
             var rbeg_y = Math.max(0, Math.floor(my - aver_radius));
-            var rend_x = Math.min(Math.floor(mx + aver_radius), conf.segm_width);
-            var rend_y = Math.min(Math.floor(my + aver_radius), conf.segm_height);
+            var rend_x = Math.min(Math.floor(mx + aver_radius), conf.width);
+            var rend_y = Math.min(Math.floor(my + aver_radius), conf.height);
             // Получение максимальной высоты для данной позиции
             var max = 0;
             for (var j = rbeg_y; j < rend_y; ++j) {
                 for (var i = rbeg_x; i < rend_x; ++i) {
-                    var map_id = i + j * conf.segm_width;
+                    var map_id = i + j * conf.width;
                     max = Math.max(max, conf.height_map[map_id]);
                 }
             }
             // Получение координат ключевых точек трассы
             var vertex = {
-                x: mx - (conf.segm_width * 0.5),
+                x: mx - (conf.width * 0.5),
                 y: max * ROUTE_HEGHT_PERCENT,
                 z: -my
             };
@@ -459,14 +459,24 @@ MODELS.Terrain = function(conf) {
 
     /**
      * Генерация трассы
-     * height_map    - Карта высот тирейна,
-     * width: conf   - Ширина тирейна,
-     * height: conf  - Длинна тирейна,
-     * route_pivots  - Массив опорных точек трассы     
+     * height_map   - Карта высот тирейна,
+     * segm_width   - Ширина тирейна,
+     * segm_height  - Длинна тирейна,
+     * route_pivots - Массив опорных точек трассы,
+     * segment_w    - Ширина сегмента,
+     * segment_h    - Длинна сегмента,
+     * route_pivots - Опорные точки трассы,
+     * route_width  - Ширина трассы,
      */
     function generateRoute(conf) {
-        // Получить оптимизированняе вершины для опорных точек трассы
-        var pivot_verts = getSplinePivots(conf);
+        // Получить оптимизированные вершины для опорных точек трассы
+        var spiv_conf = {
+            height_map:   conf.height_map,
+            width:        conf.segm_width / conf.segment_w,
+            height:       conf.segm_height / conf.segment_h,
+            route_pivots: conf.route_pivots
+        };
+        var pivot_verts = getSplinePivots(spiv_conf);
 
         // Послучить комплект горизонтальной кривизны трассы
         var i;
@@ -531,15 +541,17 @@ MODELS.Terrain = function(conf) {
                 height_map: conf.height_map,
                 tir_width: conf.segm_width + 1, // Ширина карты высот
                 segment_w: conf.segment_w,      // Ширина сегмента
+                segment_h: conf.segment_h,      // Длинна сегмента
                 route_width: conf.route_width,  // Ширины трассы
                 route_centr: route[j],          // Центральная точка трассы на ряду точек тирейна
                 tir_ids_row: tir_ids_row        // Ряд точек тирейна
             };
             generateVerges(verges_conf);
         }
+        return pivot_verts;
     }
 
-    /*
+    /**
      * Генератор сетки
      *  segment_w       - Ширина сегмента: width / segments_width,
      *  segment_h       - Длинна сегмента: height / segments_height,
@@ -617,18 +629,9 @@ MODELS.Terrain = function(conf) {
 // 1. Убрать смещение опорных точек в центр координат
 
     // Построение игрового пространства
-    
-    // Генерация сетки тирейна
-    var grid_conf = {
-        segment_w: conf.width / conf.segments_width, 
-        segment_h: conf.height / conf.segments_height, 
-        pos_x: -conf.width * 0.5, 
-        pos_z: -conf.height * 0.5, 
-        segments_width: conf.segments_width, 
-        segments_height: conf.segments_height
-    };
-    var _terrain_geometry = new Grid(grid_conf);
-    
+    var _segment_w = conf.width / conf.segments_width;
+    var _segment_h = conf.height / conf.segments_height;
+
     // Генерация Холмов
     var hm_conf = {
         hills: NUM_HILLS,
@@ -637,35 +640,35 @@ MODELS.Terrain = function(conf) {
     };
     var _height_map = new HegthMap(hm_conf);
 
-    // * Тестовая картинка карты высот
-    var pixelData = new Uint8Array(hm_conf.segm_width * hm_conf.segm_height * 4);
-    var aid = 0;
-    for (var y = 0; y < hm_conf.segm_height; ++y) {
-        for (var x = 0; x < hm_conf.segm_width; ++x) {
-            id = y * hm_conf.segm_width + x;
-            aid = id * 4;
-            var ht = _height_map[id] / 10;
-            var c = Math.floor(255 * (10 < ht ? 1 : ht));
-            pixelData[aid] = c;
-            pixelData[aid + 1] = c;
-            pixelData[aid + 2] = c;
-            pixelData[aid + 3] = 255;
-        }
-    }
-    const dataTexture = new THREE.DataTexture(
-        pixelData,
-        hm_conf.segm_width,
-        hm_conf.segm_height,
-        THREE.RGBAFormat,
-        THREE.UnsignedByteType,
-        THREE.UVMapping);
-    dataTexture.needsUpdate = true;
-    var _hm_mat = new THREE.SpriteMaterial( { map: dataTexture } );
-    var _hm_sprite = new THREE.Sprite( _hm_mat );
-    _hm_sprite.position.set(0, 5, 0);
-    _hm_sprite.scale.set(hm_conf.segm_width / 5, hm_conf.segm_height / 5, 1);
-    _scope.add(_hm_sprite);
-    // * __________________________________________________
+    // // * Тестовая картинка карты высот
+    // var pixelData = new Uint8Array(hm_conf.segm_width * hm_conf.segm_height * 4);
+    // var aid = 0;
+    // for (var y = 0; y < hm_conf.segm_height; ++y) {
+    //     for (var x = 0; x < hm_conf.segm_width; ++x) {
+    //         id = y * hm_conf.segm_width + x;
+    //         aid = id * 4;
+    //         var ht = _height_map[id] / 10;
+    //         var c = Math.floor(255 * (10 < ht ? 1 : ht));
+    //         pixelData[aid] = c;
+    //         pixelData[aid + 1] = c;
+    //         pixelData[aid + 2] = c;
+    //         pixelData[aid + 3] = 255;
+    //     }
+    // }
+    // const dataTexture = new THREE.DataTexture(
+    //     pixelData,
+    //     hm_conf.segm_width,
+    //     hm_conf.segm_height,
+    //     THREE.RGBAFormat,
+    //     THREE.UnsignedByteType,
+    //     THREE.UVMapping);
+    // dataTexture.needsUpdate = true;
+    // var _hm_mat = new THREE.SpriteMaterial( { map: dataTexture } );
+    // var _hm_sprite = new THREE.Sprite( _hm_mat );
+    // _hm_sprite.position.set(0, 5, 0);
+    // _hm_sprite.scale.set(hm_conf.segm_width / 5, hm_conf.segm_height / 5, 1);
+    // _scope.add(_hm_sprite);
+    // // * __________________________________________________
 
     // Генерация опорных точек трассы
     var rp_conf = {
@@ -675,27 +678,30 @@ MODELS.Terrain = function(conf) {
     };
     var _route_pivots = generatePivoutPoints(rp_conf);
 
+    // Построение трассы
+    var route_conf = {
+        height_map: _height_map,
+        segm_width: conf.segments_width,
+        segm_height: conf.segments_height,
+        segment_w: _segment_w,
+        segment_h: _segment_h,
+        route_pivots: _route_pivots,
+        route_width: conf.route_width
+    };
+    var _pivot_verts = generateRoute(route_conf);
+
     // * Отрисовка опорных точек
     var darkMaterial = new THREE.MeshBasicMaterial( { color: 0x7777cc } );
     var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x0000ff, wireframe: true, transparent: true } );
     var multiMaterial = [ darkMaterial, wireframeMaterial ];
-    for(var sp in _route_pivots) {
-        var octagedron = new THREE.OctahedronGeometry(1, 0);
+    for(var sp in _pivot_verts) {
+        var octagedron = new THREE.OctahedronGeometry(0.5, 0);
         var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
-        var pos = _route_pivots[sp];
+        var pos = _pivot_verts[sp];
         shape.position.set(pos.x, pos.y, pos.z + conf.height * 0.5);
         _scope.add(shape);
     }
     // * __________________________________________________
-
-    // Построение трассы
-    var route_conf = {
-        height_map: _height_map,
-        width: conf.segments_width,
-        height: conf.segments_height,
-        route_pivots: _route_pivots
-    };
-    generateRoute(route_conf);
 
     // Генерация сетки тирейна
     var grid_conf = {
