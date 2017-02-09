@@ -135,7 +135,7 @@ MODELS.Terrain = function(conf) {
 
     var HILL_RADIUS_PERCENT = 0.15;  ///< Процент от ширины ландшафта для вычисления радиуса холма
     var HILL_HEIGHT_PERCENT = 0.5;   ///< Процент от ширины ландшафта для вычисления высоты холма
-    var NULL_ZONE_PERCENT = 0.2;     ///< Коэфициент для зоны отчуждения на краю ландшафта на основе вычесленного радиуса
+    var NULL_ZONE_PERCENT = 0.5;     ///< Коэфициент для зоны отчуждения на краю ландшафта на основе вычесленного радиуса
     var NUM_HILLS = 50;             ///< Количество генерируемых холмов
     var ROUTE_HEGHT_PERCENT = 0.6;   ///< Процент от средней высоты в зоне ландшафта под опорной точкой перегиба трассы
     var MIN_ROUTE_PIVOUT_COUNT = 5;  ///< Минимальное число поворотов трассы
@@ -157,16 +157,16 @@ MODELS.Terrain = function(conf) {
         // Генерация холмов в пределах сетки тирейна
         function hill() {
             // Генерация радиуса холма
-            var min = Math.min(conf.segm_width, conf.segm_height);
+            var min = Math.min(conf.segm_width - 1, conf.segm_height - 1);
             var rw = Math.ceil(min * HILL_RADIUS_PERCENT * Math.random()); // Радиус в сегментах по ширине
             var rh = Math.ceil(min * HILL_RADIUS_PERCENT * Math.random()); // Радиус в сегментах по длинне
             // Генерация высоты холма
             var r = (rw + rh) * 0.5;
             var h = Math.min(min * HILL_HEIGHT_PERCENT * Math.random(), r);
             // Выбор произвольного сегмента в пределах тирейна
-            var nz = r * NULL_ZONE_PERCENT;
-            var x = Math.floor((conf.segm_width - (r + nz) * 2) * Math.random() + r);
-            var z = Math.floor((conf.segm_height - (r + nz) * 2) * Math.random() + r);
+            var dnz = (r + 1) * 2;
+            var x = Math.floor((conf.segm_width - dnz) * Math.random() + r + 1);
+            var z = Math.floor((conf.segm_height - dnz) * Math.random() + r + 1);
             // Точку вершины холма
             var top = { x: x, y: 0, z: z };
             // Вычисление положения точки холма
@@ -198,9 +198,10 @@ MODELS.Terrain = function(conf) {
                     d[pos] = getHillHeight(v);
                 }
             }
+            console.log(r + ',\t|' + x + ', ' + z + '| ' + dnz);
         }
         // Сгенерировать множество холмов
-        for (var hs = 0; hs < conf.hills; ++hs) {
+        for (var hs = 0; hs < 10; ++hs) {// conf.hills; ++hs) {
             hill();
         }
         return d;
@@ -282,9 +283,10 @@ MODELS.Terrain = function(conf) {
 
     /** 
      * Генерация точек перегиба в горизонтальной плоскости
-     * width      - ширина ландшафта
-     * min_points - минимальное число изгобов
-     * max_points - максимальное число изгобов
+     * width       - ширина ландшафта
+     * route_width - ширина трассы
+     * min_points  - минимальное число изгобов
+     * max_points  - максимальное число изгобов
      */
     function generatePivoutPoints(conf) {
         var fx = [];
@@ -292,8 +294,9 @@ MODELS.Terrain = function(conf) {
         var count = Math.floor((conf.max_points - conf.min_points) * Math.random() + 0.5) + conf.min_points;
         fx[0] = 0; ///< Первая точка всегда в центре
         // Получить значения перегибов в пределах ширины тирейна
+        var w = conf.width - conf.route_width;
         for (var i = 1; i < count; ++i) {
-            fx[i] = Math.floor(conf.width * Math.random() + 0.5) - conf.width * 0.5;
+            fx[i] = (w * Math.random()) - (w * 0.5);
         }
         fx[count] = 0; ///< Последняя точка всегда в центре
         return fx;
@@ -359,18 +362,20 @@ MODELS.Terrain = function(conf) {
     /** 
      * Вычисление процента вертикальных подъемов от максимальной в пределах зоны, для ключевых точек горизонтальных изгибов трассы 
      * height_map    - Карта высот тирейна,
-     * width: conf   - Ширина тирейна,
-     * height: conf  - Длинна тирейна,
-     * route_pivots  - Массив опорных точек трассы     
+     * route_width   - Ширина трассы,
+     * width         - Ширина тирейна,
+     * height        - Длинна тирейна,
+     * route_pivots  - Массив опорных точек трассы
      */
     function getSplinePivots(conf) {
         var res = [];
         var delta_average = conf.height / (conf.route_pivots.length - 1); // смещение определятся количеством отрезков, а не точек
         var aver_radius = delta_average * 0.25; // область для нахождения максимальной точки в радиусе 1/4 от длинны отрезка трассы
         // Проход по X - составляющим опорных точек
+        var w = (conf.width - conf.route_width * 0.5);
         for (var riter = 0; riter < conf.route_pivots.length; ++riter) {
             // Получить координату точки трассы наиболее близкую к опорной
-            var mx = Math.floor(conf.route_pivots[riter] + (conf.width * 0.5));
+            var mx = Math.floor(conf.route_pivots[riter] + w);
             var my = Math.floor(riter * delta_average);
             // Получить параметры зоны точки изгиба трассы
             var rbeg_x = Math.max(0, Math.floor(mx - aver_radius));
@@ -387,12 +392,12 @@ MODELS.Terrain = function(conf) {
             }
             // Получение координат ключевых точек трассы
             var vertex = {
-                x: mx - (conf.width * 0.5),
+                x: mx - w,
                 y: max * ROUTE_HEGHT_PERCENT,
                 z: -my
             };
             res[riter] = vertex;
-            console.log(JSON.stringify(vertex));
+            //console.log(JSON.stringify(vertex));
         }
         // Первая и последние точки должны быть на нулевой высоте
         res[0].y = 0;
@@ -472,8 +477,9 @@ MODELS.Terrain = function(conf) {
         // Получить оптимизированные вершины для опорных точек трассы
         var spiv_conf = {
             height_map:   conf.height_map,
-            width:        conf.segm_width / conf.segment_w,
-            height:       conf.segm_height / conf.segment_h,
+            route_width:  conf.route_width,
+            width:        conf.segm_width * conf.segment_w,
+            height:       conf.segm_height * conf.segment_h,
             route_pivots: conf.route_pivots
         };
         var pivot_verts = getSplinePivots(spiv_conf);
@@ -640,39 +646,40 @@ MODELS.Terrain = function(conf) {
     };
     var _height_map = new HegthMap(hm_conf);
 
-    // // * Тестовая картинка карты высот
-    // var pixelData = new Uint8Array(hm_conf.segm_width * hm_conf.segm_height * 4);
-    // var aid = 0;
-    // for (var y = 0; y < hm_conf.segm_height; ++y) {
-    //     for (var x = 0; x < hm_conf.segm_width; ++x) {
-    //         id = y * hm_conf.segm_width + x;
-    //         aid = id * 4;
-    //         var ht = _height_map[id] / 10;
-    //         var c = Math.floor(255 * (10 < ht ? 1 : ht));
-    //         pixelData[aid] = c;
-    //         pixelData[aid + 1] = c;
-    //         pixelData[aid + 2] = c;
-    //         pixelData[aid + 3] = 255;
-    //     }
-    // }
-    // const dataTexture = new THREE.DataTexture(
-    //     pixelData,
-    //     hm_conf.segm_width,
-    //     hm_conf.segm_height,
-    //     THREE.RGBAFormat,
-    //     THREE.UnsignedByteType,
-    //     THREE.UVMapping);
-    // dataTexture.needsUpdate = true;
-    // var _hm_mat = new THREE.SpriteMaterial( { map: dataTexture } );
-    // var _hm_sprite = new THREE.Sprite( _hm_mat );
-    // _hm_sprite.position.set(0, 5, 0);
-    // _hm_sprite.scale.set(hm_conf.segm_width / 5, hm_conf.segm_height / 5, 1);
-    // _scope.add(_hm_sprite);
-    // // * __________________________________________________
+    // * Тестовая картинка карты высот
+    var pixelData = new Uint8Array(hm_conf.segm_width * hm_conf.segm_height * 4);
+    var aid = 0;
+    for (var y = 0; y < hm_conf.segm_height; ++y) {
+        for (var x = 0; x < hm_conf.segm_width; ++x) {
+            id = y * hm_conf.segm_width + x;
+            aid = id * 4;
+            var ht = _height_map[id] / 10;
+            var c = Math.floor(255 * (10 < ht ? 1 : ht));
+            pixelData[aid] = c;
+            pixelData[aid + 1] = c;
+            pixelData[aid + 2] = c;
+            pixelData[aid + 3] = 255;
+        }
+    }
+    const dataTexture = new THREE.DataTexture(
+        pixelData,
+        hm_conf.segm_width,
+        hm_conf.segm_height,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        THREE.UVMapping);
+    dataTexture.needsUpdate = true;
+    var _hm_mat = new THREE.SpriteMaterial( { map: dataTexture } );
+    var _hm_sprite = new THREE.Sprite( _hm_mat );
+    _hm_sprite.position.set(0, 5, 0);
+    _hm_sprite.scale.set(hm_conf.segm_width / 5, hm_conf.segm_height / 5, 1);
+    _scope.add(_hm_sprite);
+    // * __________________________________________________
 
     // Генерация опорных точек трассы
     var rp_conf = {
         width: conf.width,
+        route_width: conf.route_width,
         min_points: MIN_ROUTE_PIVOUT_COUNT,
         max_points: MAX_ROUTE_PIVOUT_COUNT
     };
@@ -690,18 +697,18 @@ MODELS.Terrain = function(conf) {
     };
     var _pivot_verts = generateRoute(route_conf);
 
-    // * Отрисовка опорных точек
-    var darkMaterial = new THREE.MeshBasicMaterial( { color: 0x7777cc } );
-    var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x0000ff, wireframe: true, transparent: true } );
-    var multiMaterial = [ darkMaterial, wireframeMaterial ];
-    for(var sp in _pivot_verts) {
-        var octagedron = new THREE.OctahedronGeometry(0.5, 0);
-        var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
-        var pos = _pivot_verts[sp];
-        shape.position.set(pos.x, pos.y, pos.z + conf.height * 0.5);
-        _scope.add(shape);
-    }
-    // * __________________________________________________
+    // // * Отрисовка опорных точек
+    // var darkMaterial = new THREE.MeshBasicMaterial( { color: 0x7777cc } );
+    // var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x0000ff, wireframe: true, transparent: true } );
+    // var multiMaterial = [ darkMaterial, wireframeMaterial ];
+    // for(var sp in _pivot_verts) {
+    //     var octagedron = new THREE.OctahedronGeometry(0.5, 0);
+    //     var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
+    //     var pos = _pivot_verts[sp];
+    //     shape.position.set(pos.x, pos.y, pos.z + conf.height * 0.5);
+    //     _scope.add(shape);
+    // }
+    // // * __________________________________________________
 
     // Генерация сетки тирейна
     var grid_conf = {
@@ -718,7 +725,7 @@ MODELS.Terrain = function(conf) {
     // _terrain_geometry..computeVertexNormals();
     // _terrain_geometry..computeTangents();
 
-    var _mat_tir = new THREE.MeshBasicMaterial({ color:0x00ff00, wireframe: true, transparent: true });
+    var _mat_tir = new THREE.MeshBasicMaterial({ color:0x000808, wireframe: true, transparent: true });
     var _mesh_tir = new THREE.Mesh(_terrain_geometry, _mat_tir);
     _mesh_tir.receiveShadow  = true;
     _scope.add(_mesh_tir);
