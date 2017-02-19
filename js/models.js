@@ -133,9 +133,6 @@ MODELS.Terrain = function(conf) {
     THREE.Group.call(this);
     var _scope = this;
 
-    var HILL_RADIUS_PERCENT = 0.3;   ///< Процент от ширины ландшафта для вычисления радиуса холма
-    var HILL_HEIGHT_PERCENT = 0.2;   ///< Процент от ширины ландшафта для вычисления высоты холма
-    var NULL_ZONE_PERCENT = 0.5;     ///< Коэфициент для зоны отчуждения на краю ландшафта на основе вычесленного радиуса
     var NUM_HILLS = conf.hills_num;  ///< Количество генерируемых холмов
     var ROUTE_HEGHT_PERCENT = 0.6;   ///< Процент от средней высоты в зоне ландшафта под опорной точкой перегиба трассы
     var MIN_ROUTE_PIVOUT_COUNT = 5;  ///< Минимальное число поворотов трассы
@@ -214,6 +211,7 @@ MODELS.Terrain = function(conf) {
         var width_in_segms = conf.conv.widthInSegments();
         var height_in_segms = conf.conv.heightInSegments();
         // Создать посегментную карту высот
+        var max_y = 0;
         var d = [];
         var i;
         for (i = 0; i < width_in_segms * height_in_segms; ++i) {
@@ -221,21 +219,27 @@ MODELS.Terrain = function(conf) {
         }
         // Генерация холмов в пределах сетки тирейна
         function hill() {
+            var HILL_RADIUS_PERCENT = 0.45;   ///< Процент от ширины ландшафта для вычисления радиуса холма
+            var HILL_HEIGHT_PERCENT = 0.15;   ///< Процент от ширины ландшафта для вычисления высоты холма
             // Генерация радиуса холма
-            var min = Math.min(width_in_segms - 1, height_in_segms - 1);
+            var min = Math.min(width_in_segms, height_in_segms);
             var r = Math.ceil(min * HILL_RADIUS_PERCENT * Math.random()); // Радиус в сегментах по ширине
             // Генерация высоты холма
             var hp = r * HILL_HEIGHT_PERCENT;
-            var h = (r - hp) * Math.random() + hp;
+            var h = hp * Math.random() + hp * HILL_HEIGHT_PERCENT;
             // Выбор произвольного сегмента в пределах тирейна
-            var dnz = (r + 2) * 2;
-            var x = Math.floor((width_in_segms - dnz) * Math.random() + r + 2);
-            var z = Math.floor((height_in_segms - dnz) * Math.random() + r + 2);
+            var theta = 6.28 * Math.random();
+            var hw = width_in_segms * 0.5;
+            var hh = height_in_segms * 0.5;
+            var dw = (hw - r) * Math.random() + r * 0.5;
+            var dh = (hh - r) * Math.random() + r * 0.5;
+            var x = hw + Math.cos(theta) * dw;
+            var z = hh + Math.sin(theta) * dh;
+            //console.log(min + ' | ' + r + ' - ' + h + ' > ' + x + ',' + z);
             // Точку вершины холма
             var top = { x: x, y: 0, z: z };
             // Вычисление положения точки холма
-            var circle_region_koeff = 0.72;
-            var divider = Math.sqrt(2 * h * r * circle_region_koeff);
+            var divider = Math.sqrt(2 * h * r);
             function getHillHeight(v) {
                 var y = h;
                 var dividend = Math.pow((top.x - v.x), 2) + Math.pow((top.z - v.z), 2);
@@ -248,10 +252,10 @@ MODELS.Terrain = function(conf) {
                 return (v.y + y);
             }
             // Получить параметры зоны холма
-            var beg_x = Math.floor(x - r);
-            var beg_z = Math.floor(z - r);
-            var end_x = Math.floor(x + r);
-            var end_z = Math.floor(z + r);
+            var beg_x = Math.max(0, Math.floor(x - r));
+            var beg_z = Math.max(0, Math.floor(z - r));
+            var end_x = Math.min(Math.floor(x + r), width_in_segms - 1);
+            var end_z = Math.min(Math.floor(z + r), height_in_segms - 1);
             for (j = beg_z; j <= end_z; ++j) {
                 for (i = beg_x; i <= end_x; ++i) {
                     var pos = j * width_in_segms + i;
@@ -260,6 +264,9 @@ MODELS.Terrain = function(conf) {
                         y: d[pos],
                         z: j
                     };
+                    if (max_y < v.y) {
+                        max_y = v.y;
+                    }
                     d[pos] = getHillHeight(v);
                     if (pos < 0) {
                         console.log('ERROR: HM!');
@@ -271,6 +278,11 @@ MODELS.Terrain = function(conf) {
         // Сгенерировать множество холмов
         for (var hs = 0; hs < conf.hills; ++hs) {
             hill();
+        }
+        // Нормализация карты высот
+        var width = conf.conv.width();
+        for (i in d) {
+            d[i] = (d[i] / max_y) * width * 0.4;
         }
         return d;
     };
@@ -364,8 +376,7 @@ MODELS.Terrain = function(conf) {
         // Получить значения перегибов в пределах ширины тирейна
         var w = conf.width - conf.route_width * 3;
         for (var i = 1; i < count; ++i) {
-            fx[i] = w * Math.random() + conf.route_width * 1.5;
-            //console.log('fx[' + i +']=' + fx[i]);
+            fx[i] = w * Math.random() + conf.route_width * 1.2;
         }
         fx[count] = fx[0]; ///< Последняя точка всегда в центре
         return fx;
@@ -612,9 +623,7 @@ MODELS.Terrain = function(conf) {
                         y: binom4(y_binom_conf),
                     };
                     route[beg] = v;
-                    //console.log(JSON.stringify(route[beg]) + ' | ' + t);
                 }
-                // console.log(s + ': ' + beg + ',' + end + ' - ' + t_coef);
                 beg = end;
             }
             console.log(route.length);
@@ -631,7 +640,6 @@ MODELS.Terrain = function(conf) {
                     tir_id_beg: j * segm_width
                 };
                 generateVerges(verges_conf);
-                //console.log(verges_conf.tir_id_beg + ' | | ' + verges_conf.tir_id_end);
             }
         }
         return {
@@ -680,8 +688,10 @@ MODELS.Terrain = function(conf) {
 
                 vec.x = conf.pos_x + i * sw;
                 vec.z = -(conf.pos_z + j * sh);
-                if (typeof conf.height_map !== undefined) {
+                if (conf.height_map) {
                     y = conf.height_map[++map_id];
+                } else {
+                    y = 0;
                 }
                 var lv = new THREE.Vector3(vec.x, y, vec.z);
                 geometry.vertices.push(lv);
@@ -699,7 +709,7 @@ MODELS.Terrain = function(conf) {
                     new THREE.Face3(id_3, id_2, id_0)); // face[a, b, c]
 
                 // Получение высоты средней точки сегмента
-                if (typeof conf.height_map !== undefined) {
+                if (conf.height_map) {
                     geometry.vertices[id_3].y = (
                         geometry.vertices[id_0].y + geometry.vertices[id_1].y + geometry.vertices[id_2].y + geometry.vertices[id_4].y
                         ) * 0.25;
@@ -707,6 +717,8 @@ MODELS.Terrain = function(conf) {
                 // Пересчёт индекса нижней левой точки сектора в ряду
                 id_0 += (j > 1) ? 2 : 1;
             }
+            // Пересчёт индекса нижней левой точки сектора в столбце
+            id_0 += 1;
         }
         return geometry;
     };
@@ -741,7 +753,6 @@ MODELS.Terrain = function(conf) {
         route_width: conf.route_width
     };
     var _route = generateRoute(route_conf);
-    _height_map = _route.heigth_map;
 
     // // * Тестовая картинка карты высот
     // var pixelData = new Uint8Array(hm_conf.segm_width * hm_conf.segm_height * 4);
@@ -773,32 +784,32 @@ MODELS.Terrain = function(conf) {
     // _scope.add(_hm_sprite);
     // // * __________________________________________________
 
-    // * Отрисовка опорных точек
-    var darkMaterial = new THREE.MeshBasicMaterial( { color: 0xff7733 } );
-    var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, transparent: true } );
-    var multiMaterial = [ darkMaterial, wireframeMaterial ];
-    for(var sp in _route.pivot_verts) {
-        var octagedron = new THREE.OctahedronGeometry(0.8, 0);
-        var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
-        var pos = _route.pivot_verts[sp];
-        shape.position.set(pos.x - _conv.width() * 0.5, pos.y, -pos.z + conf.height * 0.5);
-        _scope.add(shape);
-    }
-    // * __________________________________________________
+    // // * Отрисовка опорных точек
+    // var darkMaterial = new THREE.MeshBasicMaterial( { color: 0xff7733 } );
+    // var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, transparent: true } );
+    // var multiMaterial = [ darkMaterial, wireframeMaterial ];
+    // for(var sp in _route.pivot_verts) {
+    //     var octagedron = new THREE.OctahedronGeometry(0.8, 0);
+    //     var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
+    //     var pos = _route.pivot_verts[sp];
+    //     shape.position.set(pos.x - _conv.width() * 0.5, pos.y, -pos.z + conf.height * 0.5);
+    //     _scope.add(shape);
+    // }
+    // // * __________________________________________________
 
     // Генерация сетки тирейна
     var grid_conf = {
         conv: _conv,
         pos_x: -conf.width * 0.5,
         pos_z: -conf.height * 0.5,
-        height_map: _height_map,
+        height_map: _height_map
     };
     var _terrain_geometry = new Grid(grid_conf);
     _terrain_geometry.computeFaceNormals();
-    // _terrain_geometry..computeVertexNormals();
-    // _terrain_geometry..computeTangents();
+    // _terrain_geometry.computeVertexNormals();
+    // _terrain_geometry.computeTangents();
 
-    var _mat_tir = new THREE.MeshBasicMaterial({ color:0x000808, wireframe: true, transparent: true });
+    var _mat_tir = new THREE.MeshBasicMaterial({ color:0x0035f10, wireframe: true, transparent: true });
     var _mesh_tir = new THREE.Mesh(_terrain_geometry, _mat_tir);
     _mesh_tir.receiveShadow  = true;
     _scope.add(_mesh_tir);
