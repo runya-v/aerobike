@@ -282,7 +282,7 @@ MODELS.Terrain = function(conf) {
         // Нормализация карты высот
         var width = conf.conv.width();
         for (i in d) {
-            d[i] = (d[i] / max_y) * width * 0.4;
+            d[i] = (d[i] / max_y) * width * 0.45;
         }
         return d;
     };
@@ -528,32 +528,41 @@ MODELS.Terrain = function(conf) {
         // Получение лекой обочины
         var i;
         var binom_conf = {};
+        var b;
         var t_div = 1 / (beg_rou - beg);
+        var t;
         for (i = beg; i < beg_rou; ++i) {
+            t = t_div * (i - beg);
             binom_conf = {
-                t: t_div * (i - beg),
+                t: t,
                 p0: cpc[0].p0,
                 p1: cpc[0].p1,
                 p2: cpc[0].p2,
                 p3: cpc[0].p3
             };
-            conf.height_map[i] = binom4(binom_conf);
+            b = binom4(binom_conf);
+            conf.height_map[i] = b;
+            conf.route_map[i] = t;
         }
         // Получение полотна трассы
         for (i = beg_rou; i < end_rou; ++i) {
             conf.height_map[i] = conf.route_centr.y;
+            conf.route_map[i] = 1;
         }
         // Получение правой обочины
         t_div = 1 / (end - end_rou);
         for (i = end_rou; i < end; ++i) {
+            t = t_div * (i - end_rou);
             binom_conf = {
-                t: t_div * (i - end_rou),
+                t: t,
                 p0: cpc[2].p0,
                 p1: cpc[2].p1,
                 p2: cpc[2].p2,
                 p3: cpc[2].p3
             };
-            conf.height_map[i] = binom4(binom_conf);
+            b = binom4(binom_conf);
+            conf.height_map[i] = b;
+            conf.route_map[i] = (1 - t);
         }
     }
 
@@ -586,6 +595,12 @@ MODELS.Terrain = function(conf) {
 
         // Послучить комплект вертикальной кривизны трассы
         var y_cpc = computeControlPointsOfCurves(y_koords);
+
+        // Подготовка карты полотна трассы
+        var route_map = [];
+        for (var rmi in conf.height_map) {
+            route_map[rmi] = 0;
+        }
 
         if (x_cpc.length === y_cpc.length) {
             // Построение кривой трассы
@@ -634,6 +649,7 @@ MODELS.Terrain = function(conf) {
                 // Сгенерировать обочины для ряда точек трассы
                 verges_conf = {
                     height_map: conf.height_map,
+                    route_map: route_map,
                     conv: conf.conv,
                     route_width: conf.route_width,        // Ширины трассы
                     route_centr: route[j],                // Центральная точка трассы на ряду точек тирейна
@@ -644,7 +660,7 @@ MODELS.Terrain = function(conf) {
         }
         return {
             pivot_verts: pivot_verts,
-            heigth_map: conf.height_map
+            route_map: route_map
         };
     }
 
@@ -723,8 +739,32 @@ MODELS.Terrain = function(conf) {
         return geometry;
     };
 
-// TODO
-// 1. Убрать смещение опорных точек в центр координат
+    /**
+     * conv      - Конвертер координат,
+     * tir_geom: - Геометрия трассы
+    */
+    function generateTerrainUvs(conf) {
+        var w = conf.conv.width();
+        var h = conf.conv.height();
+        var hw = w * 0.5;
+        var hh = h * 0.5;
+        var a;
+        var b;
+        var c;
+        var uva;
+        var uvb;
+        var uvc;
+        for (var fi in conf.tir_geom.faces) {
+            a = conf.tir_geom.vertices[conf.tir_geom.faces[fi].a];
+            b = conf.tir_geom.vertices[conf.tir_geom.faces[fi].b];
+            c = conf.tir_geom.vertices[conf.tir_geom.faces[fi].c];
+            uva = new THREE.Vector2((a.x + hw) / w, (a.z + hh) / h);
+            uvb = new THREE.Vector2((b.x + hw) / w, (b.z + hh) / h);
+            uvc = new THREE.Vector2((c.x + hw) / w, (c.z + hh) / h);
+            conf.tir_geom.faceVertexUvs[0].push([uva, uvb, uvc]);
+        }
+    }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Конвертер координат в индекс карты высот и обратно
     var _conv = new Converter(conf);
@@ -755,24 +795,24 @@ MODELS.Terrain = function(conf) {
     var _route = generateRoute(route_conf);
 
     // // * Тестовая картинка карты высот
-    // var pixelData = new Uint8Array(hm_conf.segm_width * hm_conf.segm_height * 4);
+    // var pixelData = new Uint8Array(_conv.widthInSegments() * _conv.heightInSegments() * 4);
     // var aid = 0;
-    // for (var y = 0; y < hm_conf.segm_height; ++y) {
-    //     for (var x = 0; x < hm_conf.segm_width; ++x) {
-    //         id = y * hm_conf.segm_width + x;
+    // for (var y = 0; y < _conv.heightInSegments(); ++y) {
+    //     for (var x = 0; x < _conv.widthInSegments(); ++x) {
+    //         id = y * _conv.widthInSegments() + x;
     //         aid = id * 4;
-    //         var ht = _height_map[id] / 64;
-    //         var c = Math.floor(255 * (10 < ht ? 1 : ht));
-    //         pixelData[aid] = c;
-    //         pixelData[aid + 1] = c;
-    //         pixelData[aid + 2] = c;
-    //         pixelData[aid + 3] = 255;
+    //         var ht = _route.route_map[id];
+    //         var c = Math.floor(255 * ht);
+    //         pixelData[aid] = 255;
+    //         pixelData[aid + 1] = 255;
+    //         pixelData[aid + 2] = 255;
+    //         pixelData[aid + 3] = c;
     //     }
     // }
     // const dataTexture = new THREE.DataTexture(
     //     pixelData,
-    //     hm_conf.segm_width,
-    //     hm_conf.segm_height,
+    //     _conv.widthInSegments(),
+    //     _conv.heightInSegments(),
     //     THREE.RGBAFormat,
     //     THREE.UnsignedByteType,
     //     THREE.UVMapping);
@@ -780,22 +820,22 @@ MODELS.Terrain = function(conf) {
     // var _hm_mat = new THREE.SpriteMaterial( { map: dataTexture } );
     // var _hm_sprite = new THREE.Sprite( _hm_mat );
     // _hm_sprite.position.set(0, 5, 0);
-    // _hm_sprite.scale.set(hm_conf.segm_width / 5, hm_conf.segm_height / 5, 1);
+    // _hm_sprite.scale.set(_conv.widthInSegments() / 5, _conv.heightInSegments() / 5, 1);
     // _scope.add(_hm_sprite);
     // // * __________________________________________________
 
-    // // * Отрисовка опорных точек
-    // var darkMaterial = new THREE.MeshBasicMaterial( { color: 0xff7733 } );
-    // var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, transparent: true } );
-    // var multiMaterial = [ darkMaterial, wireframeMaterial ];
-    // for(var sp in _route.pivot_verts) {
-    //     var octagedron = new THREE.OctahedronGeometry(0.8, 0);
-    //     var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
-    //     var pos = _route.pivot_verts[sp];
-    //     shape.position.set(pos.x - _conv.width() * 0.5, pos.y, -pos.z + conf.height * 0.5);
-    //     _scope.add(shape);
-    // }
-    // // * __________________________________________________
+    // * Отрисовка опорных точек
+    var darkMaterial = new THREE.MeshBasicMaterial( { color: 0xff7733 } );
+    var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, transparent: true } );
+    var multiMaterial = [ darkMaterial, wireframeMaterial ];
+    for(var sp in _route.pivot_verts) {
+        var octagedron = new THREE.OctahedronGeometry(0.8, 0);
+        var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
+        var pos = _route.pivot_verts[sp];
+        shape.position.set(pos.x - _conv.width() * 0.5, pos.y, -pos.z + conf.height * 0.5);
+        _scope.add(shape);
+    }
+    // * __________________________________________________
 
     // Генерация сетки тирейна
     var grid_conf = {
@@ -806,11 +846,49 @@ MODELS.Terrain = function(conf) {
     };
     var _terrain_geometry = new Grid(grid_conf);
     _terrain_geometry.computeFaceNormals();
-    // _terrain_geometry.computeVertexNormals();
-    // _terrain_geometry.computeTangents();
+    _terrain_geometry.computeVertexNormals();
+    _terrain_geometry.computeTangents();
 
-    var _mat_tir = new THREE.MeshBasicMaterial({ color:0x0035f10, wireframe: true, transparent: true });
-    var _mesh_tir = new THREE.Mesh(_terrain_geometry, _mat_tir);
+    // Подготовка текстурных координат
+    var uvs_conf = {
+        conv: _conv,
+        tir_geom: _terrain_geometry
+    };
+    generateTerrainUvs(uvs_conf);
+
+    var pixelData = new Uint8Array(_conv.widthInSegments() * _conv.heightInSegments() * 4);
+    var aid = 0;
+    for (var y = _conv.heightInSegments() - 1; 0 <= y; --y) {
+        for (var x = 0; x < _conv.widthInSegments(); ++x) {
+            id = y * _conv.widthInSegments() + x;
+            var ht = _route.route_map[id];
+            var c = Math.floor(255 * ht);
+            pixelData[aid] = 125;
+            pixelData[aid + 1] = 125;
+            pixelData[aid + 2] = 125;
+            pixelData[aid + 3] = c;
+            aid += 4;
+        }
+    }
+    const route_texture = new THREE.DataTexture(
+        pixelData,
+        _conv.widthInSegments(),
+        _conv.heightInSegments(),
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        THREE.UVMapping);
+    route_texture.needsUpdate = true;
+
+    var tir_texture = new THREE.ImageUtils.loadTexture('images/tir_39.jpg');
+    tir_texture.wrapS = THREE.RepeatWrapping;
+    tir_texture.wrapT = THREE.RepeatWrapping;
+    tir_texture.repeat.set(10, 10 * _conv.height() / _conv.width());
+    var _mesh_tir = new THREE.SceneUtils.createMultiMaterialObject(_terrain_geometry, [
+        new THREE.MeshBasicMaterial({map:tir_texture, transparent:true}),
+        new THREE.MeshLambertMaterial({map:route_texture, alphaTest:0.5, transparent:true})
+    ]);
+    //var _mat_tir = new THREE.MeshBasicMaterial({ color:0x0035f10, wireframe: false, transparent: true });
+    //var _mesh_tir = new THREE.Mesh(_terrain_geometry, _mat_tir);
     _mesh_tir.receiveShadow  = true;
     _scope.add(_mesh_tir);
 
