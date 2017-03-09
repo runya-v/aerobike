@@ -7,8 +7,7 @@
 var AEROBIKE = {};
 
 
-AEROBIKE.Screen = function(renderer, scene, camera) {
-    this.renderer = renderer;
+AEROBIKE.Screen = function(scene, camera) {
     this.scene = scene;
     this.camera = camera;
 
@@ -19,9 +18,8 @@ AEROBIKE.Screen = function(renderer, scene, camera) {
 };
 
 
-AEROBIKE.Start = function(renderer, on_garage, on_fast_game) {
+AEROBIKE.Start = function(on_garage, on_fast_game) {
     AEROBIKE.Screen.call(this,
-        renderer,
         new THREE.Scene(),
         new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
 
@@ -82,7 +80,6 @@ AEROBIKE.Start.prototype = Object.create(AEROBIKE.Screen.prototype);
 
 // Garage screen
 AEROBIKE.Garage = function(
-    renderer,
     on_settings,
     on_rating,
     on_shop,
@@ -90,7 +87,6 @@ AEROBIKE.Garage = function(
     on_fast_game,
     on_about) {
     AEROBIKE.Screen.call(this,
-        renderer,
         new THREE.Scene(),
         new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
     var _scope = this;
@@ -231,8 +227,8 @@ AEROBIKE.Garage.prototype = Object.create(AEROBIKE.Screen.prototype);
 
 
 // Settings screen
-AEROBIKE.Settings = function(renderer, garage, on_return_settings) {
-    AEROBIKE.Screen.call(this, renderer, garage.scene, garage.camera);
+AEROBIKE.Settings = function(garage, on_return_settings) {
+    AEROBIKE.Screen.call(this, garage.scene, garage.camera);
 
     var _display = new UTILS.Display(document.getElementById("settings_screen"));
 
@@ -258,8 +254,8 @@ AEROBIKE.Settings.prototype = Object.create(AEROBIKE.Screen.prototype);
 
 
 // Rating screen
-AEROBIKE.Rating = function(renderer, garage, on_return_rating) {
-    AEROBIKE.Screen.call(this, renderer, garage.scene, garage.camera);
+AEROBIKE.Rating = function(garage, on_return_rating) {
+    AEROBIKE.Screen.call(this, garage.scene, garage.camera);
 
     var _display = new UTILS.Display(document.getElementById("rating_screen"));
 
@@ -285,8 +281,8 @@ AEROBIKE.Rating.prototype = Object.create(AEROBIKE.Screen.prototype);
 
 
 // Shop screen
-AEROBIKE.Shop = function(renderer, garage, on_return_shop) {
-    AEROBIKE.Screen.call(this, renderer, garage.scene, garage.camera);
+AEROBIKE.Shop = function(garage, on_return_shop) {
+    AEROBIKE.Screen.call(this, garage.scene, garage.camera);
 
     var _display = new UTILS.Display(document.getElementById("shop_screen"));
 
@@ -312,8 +308,8 @@ AEROBIKE.Shop.prototype = Object.create(AEROBIKE.Screen.prototype);
 
 
 // About screen
-AEROBIKE.About = function(renderer, garage, on_return_about) {
-    AEROBIKE.Screen.call(this, renderer, garage.scene, garage.camera);
+AEROBIKE.About = function(garage, on_return_about) {
+    AEROBIKE.Screen.call(this, garage.scene, garage.camera);
 
     var _display = new UTILS.Display(document.getElementById("about_screen"));
 
@@ -339,8 +335,8 @@ AEROBIKE.About.prototype = Object.create(AEROBIKE.Screen.prototype);
 
 
 // ChoocePartner screen
-AEROBIKE.ChoocePartner = function(renderer, garage, on_return_chooce_partner) {
-    AEROBIKE.Screen.call(this, renderer, garage.scene, garage.camera);
+AEROBIKE.ChoocePartner = function(garage, on_return_chooce_partner) {
+    AEROBIKE.Screen.call(this, garage.scene, garage.camera);
 
     var _display = new UTILS.Display(document.getElementById("chooce_partner_screen"));
 
@@ -366,52 +362,38 @@ AEROBIKE.ChoocePartner.prototype = Object.create(AEROBIKE.Screen.prototype);
 
 
 // Game screen
-AEROBIKE.Game = function(renderer, on_return_game) {
+AEROBIKE.Game = function(on_return_game) {
     AEROBIKE.Screen.call(this,
-        renderer,
         new THREE.Scene(),
         new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
     var _scope = this;
     var _display = new UTILS.Display(document.getElementById("game_screen"));
-    var _controls;
 
-    // document.getElementById("game_garage_img_bt").addEventListener("click", on_return_game, false);
-    //
-    // document.getElementById("up_game_btn").addEventListener("click", function() {}, false);
-    // document.getElementById("down_game_btn").addEventListener("click", function() {}, false);
-    // document.getElementById("left_game_btn").addEventListener("click", function() {}, false);
-    // document.getElementById("right_game_btn").addEventListener("click", function() {}, false);
+    document.getElementById("game_garage_img_bt").addEventListener("click", on_return_game, false);
+
+    document.getElementById("up_game_btn").addEventListener("click", function() {}, false);
+    document.getElementById("down_game_btn").addEventListener("click", function() {}, false);
+    document.getElementById("left_game_btn").addEventListener("click", function() {}, false);
+    document.getElementById("right_game_btn").addEventListener("click", function() {}, false);
 
     // Загрузка ландшафта
-    var light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(0, 1, 0).normalize();
-    _scope.scene.add(new THREE.AmbientLight(0xffffff));
-    _scope.scene.add(light);
 
     var _group = new THREE.Group();
-    var _tir_conf = {
-        hills_num: 1000,
-        route_width: 6,
-        width: 80,
-        height: 400,
-        segments_width: 320,
-        segments_height: 1600
-    };
-    _group.add(new MODELS.Terrain(_tir_conf));
+
+    _group.add(new MODELS.Terrain(10, 50, 25, 300));
     _group.position.y = -5;
     _scope.scene.add(_group);
 
-    // _scope.scene.add(new THREE.AmbientLight(0xffffff));
-    // var directionalLight = new THREE.DirectionalLight(0xffffff, 10);
-    // directionalLight.position.set(0, 1, 0).normalize();
-    
+    _scope.scene.add(new THREE.AmbientLight(0xffffff));
+    var directionalLight = new THREE.DirectionalLight(0xffffff, 10);
+    directionalLight.position.set(0, 1, 0).normalize();
+    _scope.scene.add(directionalLight);
 
     //_scope.scene.add(new THREE.AmbientLight(0xffffff));
     //_scope.scene.add(new THREE.SpotLight(0xffffff));
 
     //_scope.camera.position.y = 1;
-    _scope.camera.position.z = 10;
-    _controls = new THREE.OrbitControls(_scope.camera, _scope.renderer.domElement);
+    _scope.camera.position.z = 30;
 
     var X_VIEW_PERCENT = 0.9;
     var Y_VIEW_PERCENT = 0.7;
@@ -462,16 +444,16 @@ AEROBIKE.Game = function(renderer, on_return_game) {
     function onDocumentTouchStart(e) {
         if (e.touches.length === 1) {
             e.preventDefault();
-            //_mouse_x_on_mouse_down = e.touches[0].pageX - _window_half_x;
-            //_target_rotation_on_mouse_down = _target_rotation;
+            _mouse_x_on_mouse_down = e.touches[0].pageX - _window_half_x;
+            _target_rotation_on_mouse_down = _target_rotation;
         }
     }
 
     function onDocumentTouchMove(e) {
         if (e.touches.length === 1) {
             e.preventDefault();
-            //_mouse_x = e.touches[0].pageX - _window_half_x;
-            //_target_rotation = _target_rotation_on_mouse_down + (_mouse_x - _mouse_x_on_mouse_down) * 0.05;
+            _mouse_x = e.touches[0].pageX - _window_half_x;
+            _target_rotation = _target_rotation_on_mouse_down + (_mouse_x - _mouse_x_on_mouse_down) * 0.05;
         }
     }
 
@@ -484,10 +466,9 @@ AEROBIKE.Game = function(renderer, on_return_game) {
     };
 
     this.update = function(dclock) {
-        //_group.rotation.y = _group.rotation.y += (_target_rotation - _group.rotation.y) * 0.05;
-        //_scope.camera.position.y += (-(_mouse_y * 0.01) * Y_VIEW_PERCENT - _scope.camera.position.y) * 0.1;
-        //_scope.camera.lookAt(_scope.scene.position);
-        _controls.update();
+        _group.rotation.y = _group.rotation.y += (_target_rotation - _group.rotation.y) * 0.05;
+        _scope.camera.position.y += (-(_mouse_y * 0.01) * Y_VIEW_PERCENT - _scope.camera.position.y) * 0.1;
+        _scope.camera.lookAt(_scope.scene.position);
     };
 
     this.hide = function() {
@@ -507,33 +488,31 @@ AEROBIKE.Main = function() {
 
     var _clock = new THREE.Clock();
 
-    _renderer = new THREE.WebGLRenderer({ antialias:true });
+    _renderer = new THREE.WebGLRenderer({antialias:true, alpha:false});
     _renderer.setClearColor(0xb3ccf9);
     _renderer.setPixelRatio(window.devicePixelRatio);
     _renderer.setSize(window.innerWidth, window.innerHeight);
     _renderer.gammaInput = true;
     _renderer.gammaOutput = true;
-    _renderer.shadowMapEnabled = true;
 
     var scene_container = document.getElementById("scene_container");
     scene_container.appendChild(_renderer.domElement);
 
     var _screen;
-    var _start = new AEROBIKE.Start(_renderer, toSimpleGarageScreen);
+    var _start = new AEROBIKE.Start(toSimpleGarageScreen);
     var _garage = new AEROBIKE.Garage(
-        _renderer,
         onSettings,
         onRating,
         onShop,
         onChoocePartner,
         onFastGame,
         onAbout);
-    var _settings = new AEROBIKE.Settings(_renderer, _garage, onReturnSettings);
-    var _rating = new AEROBIKE.Rating(_renderer, _garage, onReturnRating);
-    var _shop = new AEROBIKE.Shop(_renderer, _garage, onReturnShop);
-    var _chooce_partner = new AEROBIKE.ChoocePartner(_renderer, _garage, onReturnChoocePartner);
-    var _about = new AEROBIKE.About(_renderer, _garage, onReturnAbout);
-    var _game = new AEROBIKE.Game(_renderer, onReturnGame);
+    var _settings = new AEROBIKE.Settings(_garage, onReturnSettings);
+    var _rating = new AEROBIKE.Rating(_garage, onReturnRating);
+    var _shop = new AEROBIKE.Shop(_garage, onReturnShop);
+    var _chooce_partner = new AEROBIKE.ChoocePartner(_garage, onReturnChoocePartner);
+    var _about = new AEROBIKE.About(_garage, onReturnAbout);
+    var _game = new AEROBIKE.Game(onReturnGame);
     _screen = _start;
 
 // TODO: временное решение

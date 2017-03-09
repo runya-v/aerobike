@@ -134,9 +134,11 @@ MODELS.Terrain = function(conf) {
     var _scope = this;
 
     var NUM_HILLS = conf.hills_num;  ///< Количество генерируемых холмов
-    var ROUTE_HEGHT_PERCENT = 0.6;   ///< Процент от средней высоты в зоне ландшафта под опорной точкой перегиба трассы
+    var ROUTE_HEGHT_PERCENT = 0.55;   ///< Процент от средней высоты в зоне ландшафта под опорной точкой перегиба трассы
     var MIN_ROUTE_PIVOUT_COUNT = 5;  ///< Минимальное число поворотов трассы
     var MAX_ROUTE_PIVOUT_COUNT = 20; ///< Максимальное число поворотов трассы
+    var ROUTE_Y_BASE = 0.02;
+    var HEIGHT_SCALE = 60.0;
 
     /**
      * Конвертор координаты <-> индекс в карте высот. Координаты и карта высот должны иметь единый центр координат
@@ -283,14 +285,10 @@ MODELS.Terrain = function(conf) {
             hill();
         }
         // Нормализация карты высот
-        var hkoef = conf.conv.width() * 0.5;
         for (i in d) {
-            d[i] = (d[i] / max_y) * hkoef;
+            d[i] = (d[i] / max_y) * 0.5;
         }
-        return {
-            height_map: d,
-            max_y: max_y
-        };
+        return d;
     };
 
     /** 
@@ -380,9 +378,9 @@ MODELS.Terrain = function(conf) {
         var count = Math.floor((conf.max_points - conf.min_points) * Math.random() + 0.5) + conf.min_points;
         fx[0] = conf.width * 0.5; ///< Первая точка всегда в центре
         // Получить значения перегибов в пределах ширины тирейна
-        var w = conf.width - conf.route_width * 3;
+        var w = conf.width - conf.route_width * 5.2;
         for (var i = 1; i < count; ++i) {
-            fx[i] = w * Math.random() + conf.route_width * 1.2;
+            fx[i] = w * Math.random() + conf.route_width * 2.4;
         }
         fx[count] = fx[0]; ///< Последняя точка всегда в центре
         return fx;
@@ -457,21 +455,21 @@ MODELS.Terrain = function(conf) {
         // смещение определятся количеством отрезков, а не точек
         var delta_average = conf.conv.height() / (conf.route_pivots.length - 1);
         // область для нахождения максимальной точки в радиусе 1/4 от длинны отрезка трасs
-        var segm_aver_radius = delta_average / conf.conv.segmentHeight() * 0.25;
+        var segm_aver_radius = delta_average / conf.conv.segmentHeight() * 0.33;
         // Коэффициент смещения центра координат трассы к центру координат карты высот
         // Проход по массиву X - составляющим опорных точек
         for (var riter = 0; riter < conf.route_pivots.length; ++riter) {
             // Получить координату точки трассы наиболее близкую к опорной
             var vec = {
-                x:conf.route_pivots[riter],
-                z:Math.floor(riter * delta_average + 0.5)
+                x: conf.route_pivots[riter],
+                z: Math.floor(riter * delta_average + 0.5)
             };
             var pos = conf.conv.pos(vec);
             // Получить параметры зоны точки изгиба трассы
-            var rbeg_x = Math.max(0, Math.floor(pos.sx - segm_aver_radius + 0.5));
-            var rbeg_y = Math.max(0, Math.floor(pos.sy - segm_aver_radius + 0.5));
-            var rend_x = Math.min(Math.floor(pos.sx + segm_aver_radius + 0.5), conf.conv.widthInSegments());
-            var rend_y = Math.min(Math.floor(pos.sy + segm_aver_radius + 0.5), conf.conv.heightInSegments());
+            var rbeg_x = Math.max(1, Math.floor(pos.sx - segm_aver_radius + 0.5));
+            var rbeg_y = Math.max(1, Math.floor(pos.sy - segm_aver_radius + 0.5));
+            var rend_x = Math.min(Math.floor(pos.sx + segm_aver_radius + 0.5), conf.conv.widthInSegments() - 1);
+            var rend_y = Math.min(Math.floor(pos.sy + segm_aver_radius + 0.5), conf.conv.heightInSegments() - 1);
             // Получение максимальной высоты для данной позиции
             //console.log(JSON.stringify(pos) + '|' + segm_aver_radius + ' {' + rbeg_x + ',' + rbeg_y + ',' + rend_x + ',' + rend_y + '}');
             var max = 0;
@@ -492,8 +490,7 @@ MODELS.Terrain = function(conf) {
             //console.log(JSON.stringify(vertex));
         }
         // Первая и последние точки должны быть на нулевой высоте
-        res[0].y = 0;
-        res[conf.route_pivots.length - 1].y = 0;
+        res[0].y = res[conf.route_pivots.length - 1].y = 0;
         return res;
     }
 
@@ -511,12 +508,14 @@ MODELS.Terrain = function(conf) {
             z: conf.route_centr.z
         };
         var pos = conf.conv.pos(vec);
+        var sh = conf.conv.heightInSegments();
         var segm_verg_width = Math.floor(conf.route_width / conf.conv.segmentWidth() + 0.5);
-        var hsvw = Math.floor(segm_verg_width * 0.5 + 0.5);
-        var beg = conf.tir_id_beg + pos.sx - segm_verg_width;
-        var beg_rou = conf.tir_id_beg + pos.sx - (segm_verg_width - hsvw);
-        var end_rou = conf.tir_id_beg + pos.sx + (segm_verg_width - hsvw);
-        var end = conf.tir_id_beg + pos.sx + segm_verg_width;
+        //var hsvw = Math.floor(segm_verg_width * 0.5 + 0.5);
+        var hsvw = segm_verg_width;
+        var beg = conf.tir_id_beg + pos.sx - segm_verg_width * 1.5;
+        var beg_rou = conf.tir_id_beg + pos.sx - (segm_verg_width * 0.5);
+        var end_rou = conf.tir_id_beg + pos.sx + (segm_verg_width * 0.5);
+        var end = conf.tir_id_beg + pos.sx + segm_verg_width * 1.5;
         //console.log(JSON.stringify(vec) + '-> ' + beg + '|' + beg_rou + ' - ' + pos.sx + ' - ' + end_rou + '|' + end);
 
         if (beg < 0) {
@@ -548,12 +547,10 @@ MODELS.Terrain = function(conf) {
             };
             b = binom4(binom_conf);
             conf.height_map[i] = b;
-            conf.route_map[i] = t;
         }
         // Получение полотна трассы
         for (i = beg_rou; i < end_rou; ++i) {
             conf.height_map[i] = conf.route_centr.y;
-            conf.route_map[i] = 1;
         }
         // Получение правой обочины
         t_div = 1 / (end - end_rou);
@@ -568,11 +565,15 @@ MODELS.Terrain = function(conf) {
             };
             b = binom4(binom_conf);
             conf.height_map[i] = b;
-            conf.route_map[i] = (1 - t);
         }
+        // Побавить пиксел текстуры трассы
+        var a = pos.sx / conf.conv.widthInSegments();
+        var b = pos.sy / conf.conv.heightInSegments();
+        conf.route_map.push(a);
+        conf.route_map.push(conf.route_centr.y);
+        conf.route_map.push(b);
+        //console.log(vec.z + '|' + pos.sy + ': ' + a + ', ' + conf.route_centr.y + ', ' + b);
     }
-
-    var ROUTE_Y_BASE = 0.2;
 
     /**
      * Генерация трассы
@@ -592,25 +593,27 @@ MODELS.Terrain = function(conf) {
         };
         var pivot_verts = getSplinePivots(spiv_conf);
 
-        // Послучить комплект горизонтальной кривизны трассы
+        // Подготовить данные для построения кривой в x и y плоскостях
         var x_koords = [];
         var y_koords = [];
         for (var i = 0; i < pivot_verts.length; ++i) {
             x_koords.push(pivot_verts[i].x);
             y_koords.push(pivot_verts[i].y);
         }
+        // Послучить комплект горизонтальной кривизны трассы
         var x_cpc = computeControlPointsOfCurves(x_koords);
 
         // Послучить комплект вертикальной кривизны трассы
         var y_cpc = computeControlPointsOfCurves(y_koords);
 
-        // Подготовка карты полотна трассы
-        var route_map = [];
-        for (var rmi in conf.height_map) {
-            route_map[rmi] = 0;
-        }
-
         if (x_cpc.length === y_cpc.length) {
+            // Подготовка карты полотна трассы, представленном в виде массива 3d координат
+            var route_map = [];
+            var RGB = 3;
+            for (var rmi in conf.conv.heightInSegments() * RGB) {
+                route_map[rmi] = 0;
+            }
+
             // Построение кривой трассы
             var route = [];
             var sp_count = conf.conv.heightInSegments() / x_cpc.length; ///< Число точек трассы в карте высот
@@ -644,12 +647,15 @@ MODELS.Terrain = function(conf) {
                     var v = {
                         x: binom4(x_binom_conf),
                         y: binom4(y_binom_conf) + ROUTE_Y_BASE,
+                        z: beg * conf.conv.segmentHeight()
                     };
                     route[beg] = v;
                 }
                 beg = end;
             }
-            console.log(route.length);
+            // Первая и последняя точки на нулевой высоте
+            route[0].y = route[route.length - 1].y = 0;
+            //console.log(route.length);
 
             // Пройти по карте высот
             var verges_conf = {};
@@ -676,8 +682,6 @@ MODELS.Terrain = function(conf) {
      * Генератор сетки
      *  pos_x           - Смещение в начало координат: -width * 0.5,
      *  pos_z           - Смещение в начало координат: -height * 0.5,
-     *  height_map      - Карта высот, если нужна
-     *  max_y           - Максимальная высота
      */
     Grid = function(conf) {
         var geometry = new THREE.Geometry();
@@ -685,7 +689,6 @@ MODELS.Terrain = function(conf) {
         var swidth = conf.conv.width();
         var sheight = conf.conv.height();
         var i;
-        var y = 0;
         for (i = 0; i <= swidth; i++) {
             geometry.vertices.push(new THREE.Vector3(conf.pos_x + i, 0, -conf.pos_z));
         }
@@ -702,31 +705,13 @@ MODELS.Terrain = function(conf) {
                     x: conf.pos_x + (i - 0.5),
                     z: -(conf.pos_z + (j - 0.5))
                 };
-                if (conf.height_map) {
-                    map_id = conf.conv.pos({
-                        x: vec.x - conf.pos_x,
-                        z: -(vec.z + conf.pos_z)
-                    }).pos;
-                    y = conf.height_map[map_id] * conf.max_y;
-                } else {
-                    y = 0;
-                }
-                var mv = new THREE.Vector3(vec.x, y, vec.z);
+                var mv = new THREE.Vector3(vec.x, 0, vec.z);
                 geometry.vertices.push(mv);
 
                 // Верхняя правая точка сегмента
                 vec.x = conf.pos_x + i;
                 vec.z = -(conf.pos_z + j);
-                if (conf.height_map) {
-                    map_id = conf.conv.pos({
-                        x: vec.x - conf.pos_x,
-                        z: -(vec.z + conf.pos_z)
-                    }).pos;
-                    y = conf.height_map[map_id] * conf.max_y;
-                } else {
-                    y = 0;
-                }
-                var lv = new THREE.Vector3(vec.x, y, vec.z);
+                var lv = new THREE.Vector3(vec.x, 0, vec.z);
                 geometry.vertices.push(lv);
 
                 // Вычисление индексов точек для поверхностей текущего сектора
@@ -778,41 +763,72 @@ MODELS.Terrain = function(conf) {
 
     /**
      * Функция генерации маски по высоте
-     * r, g, b  - Цвет полотна трассы,
      * conv     - Конвертер координат,
      * map:     - Геометрия трассы
      */
-    function generateTextureMask(conf) {
-        var pixelData = new Uint8Array(conf.conv.widthInSegments() * conf.conv.heightInSegments() * 4);
+    function generateRouteTexture(conf) {
+        var RGB = 3;
+        // // Получить максимальные значения координат
+        // var v_maxs = { x:1, y:1, z:1 };
+        // for (var i = 0; i < conf.map.length; i += RGB) {
+        //     if (v_maxs.x > conf.map[i]) { v_maxs.x = conf.map[i]; }
+        //     if (v_maxs.y > conf.map[i + 1]) { v_maxs.y = conf.map[i + 1]; }
+        //     if (v_maxs.z > conf.map[i + 2]) { v_maxs.z = conf.map[i + 2]; }
+        // }
+        // console.log('Maxs: ' + JSON.stringify(v_maxs));
+
+        var RGBA = 4;
+        var pixelData = new Uint8Array(conf.conv.heightInSegments() * RGBA);
+        var did = 0;
+        var mid = conf.conv.heightInSegments() - 1;
+        for (var i = conf.conv.heightInSegments() - 1; 0 <= i; --i) {
+            mid = i * RGB;
+            pixelData[did]     = Math.floor(255 * conf.map[mid]     + 0.5);
+            pixelData[did + 1] = Math.floor(255 * conf.map[mid + 1] + 0.5);
+            pixelData[did + 2] = Math.floor(255 * conf.map[mid + 2] + 0.5);
+            pixelData[did + 3] = 255;
+            did += RGBA;
+        }
+        const texture = new THREE.DataTexture(
+            pixelData,
+            1,
+            conf.conv.heightInSegments(),
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType,
+            THREE.UVMapping);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    /**
+     * Функция генерации текстуры по карте высот
+     * conv     - Конвертер координат,
+     * map:     - Геометрия трассы
+     */
+    function generateTerrainTexture(conf) {
+        var RGB = 3;
+        var pixelData = new Uint8Array(conf.conv.widthInSegments() * conf.conv.heightInSegments() * RGB);
         var aid = 0;
         for (var y = conf.conv.heightInSegments() - 1; 0 <= y; --y) {
             for (var x = 0; x < conf.conv.widthInSegments(); ++x) {
                 id = y * conf.conv.widthInSegments() + x;
                 var ht = conf.map[id];
-                var c = 255; // Альфаканал
-                if (conf.cut_null) {
-                    if (ht == 0) {
-                        c = 0;
-                    }
-                } else {
-                    c = Math.floor(255 * ht);
-                }
-                pixelData[aid] = conf.r;
-                pixelData[aid + 1] = conf.g;
-                pixelData[aid + 2] = conf.b;
-                pixelData[aid + 3] = c;
-                aid += 4;
+                var c = 255 * ht;
+                pixelData[aid] = c;
+                pixelData[aid + 1] = c;
+                pixelData[aid + 2] = c;
+                aid += RGB;
             }
         }
-        const route_texture = new THREE.DataTexture(
+        const texture = new THREE.DataTexture(
             pixelData,
             conf.conv.widthInSegments(),
             conf.conv.heightInSegments(),
-            THREE.RGBAFormat,
+            THREE.RGBFormat,
             THREE.UnsignedByteType,
             THREE.UVMapping);
-        route_texture.needsUpdate = true;
-        return route_texture;
+        texture.needsUpdate = true;
+        return texture;
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -824,7 +840,7 @@ MODELS.Terrain = function(conf) {
         hills: NUM_HILLS,
         conv: _conv
     };
-    var _hmap = new HegthMap(hm_conf);
+    var _height_map = new HegthMap(hm_conf);
 
     // Генерация опорных точек трассы
     var rp_conf = {
@@ -837,42 +853,12 @@ MODELS.Terrain = function(conf) {
 
     // Построение трассы
     var route_conf = {
-        height_map: _hmap.height_map,
+        height_map: _height_map,
         conv: _conv,
         route_pivots: _route_pivots,
         route_width: conf.route_width
     };
     var _route = generateRoute(route_conf);
-
-    // // * Тестовая картинка карты высот
-    // var pixelData = new Uint8Array(_conv.widthInSegments() * _conv.heightInSegments() * 4);
-    // var aid = 0;
-    // for (var y = 0; y < _conv.heightInSegments(); ++y) {
-    //     for (var x = 0; x < _conv.widthInSegments(); ++x) {
-    //         id = y * _conv.widthInSegments() + x;
-    //         aid = id * 4;
-    //         var ht = _route.route_map[id];
-    //         var c = Math.floor(255 * ht);
-    //         pixelData[aid] = 255;
-    //         pixelData[aid + 1] = 255;
-    //         pixelData[aid + 2] = 255;
-    //         pixelData[aid + 3] = c;
-    //     }
-    // }
-    // const dataTexture = new THREE.DataTexture(
-    //     pixelData,
-    //     _conv.widthInSegments(),
-    //     _conv.heightInSegments(),
-    //     THREE.RGBAFormat,
-    //     THREE.UnsignedByteType,
-    //     THREE.UVMapping);
-    // dataTexture.needsUpdate = true;
-    // var _hm_mat = new THREE.SpriteMaterial( { map: dataTexture } );
-    // var _hm_sprite = new THREE.Sprite( _hm_mat );
-    // _hm_sprite.position.set(0, 5, 0);
-    // _hm_sprite.scale.set(_conv.widthInSegments() / 5, _conv.heightInSegments() / 5, 1);
-    // _scope.add(_hm_sprite);
-    // // * __________________________________________________
 
     // // * Отрисовка опорных точек
     // var darkMaterial = new THREE.MeshBasicMaterial( { color: 0xff7733 } );
@@ -882,7 +868,7 @@ MODELS.Terrain = function(conf) {
     //     var octagedron = new THREE.OctahedronGeometry(0.8, 0);
     //     var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
     //     var pos = _route.pivot_verts[sp];
-    //     shape.position.set(pos.x - _conv.width() * 0.5, pos.y, -pos.z + conf.height * 0.5);
+    //     shape.position.set(pos.x - _conv.width() * 0.5, pos.y * HEIGHT_SCALE, -pos.z + conf.height * 0.5);
     //     _scope.add(shape);
     // }
     // // * __________________________________________________
@@ -892,8 +878,6 @@ MODELS.Terrain = function(conf) {
         conv: _conv,
         pos_x: -conf.width * 0.5,
         pos_z: -conf.height * 0.5,
-        height_map: _hmap.height_map,
-        max_y: 1
     };
     var _terrain_geometry = new Grid(grid_conf);
     _terrain_geometry.computeFaceNormals();
@@ -909,110 +893,105 @@ MODELS.Terrain = function(conf) {
 
     // Получить текстуру трассы
     var rtex_conf = {
-        r:120, g:120, b:120,
         conv: _conv,
-        map: _route.route_map,
-        max_y: 1,
-        cut_null: false
+        map: _route.route_map
     };
-    var route_mask = generateTextureMask(rtex_conf);
+    var route_curve = generateRouteTexture(rtex_conf);
 
-    // Получить текстуру трассы
-    var tirtex_conf = {
-        r:120, g:220, b:120,
+    // Получить текстуру карты высот
+    var tirhmtex_conf = {
         conv: _conv,
-        map: _hmap.height_map,
-        max_y: _hmap.max_y,
-        cut_null: true
+        map: _height_map
     };
-    var tir_mask = generateTextureMask(tirtex_conf);
+    var tir_hm_tex = generateTerrainTexture(tirhmtex_conf);
 
     // // * Отрисовка маски
-    // var _hm_mat = new THREE.SpriteMaterial( { map: tir_mask } );
-    // var _hm_sprite = new THREE.Sprite( _hm_mat );
+    // var _hm_mat = new THREE.SpriteMaterial({ map: route_mask });
+    // //var _hm_mat = new THREE.SpriteMaterial({ map: tir_hm_tex });
+    // //var _hm_mat = new THREE.SpriteMaterial({ map: tir_mask });
+    // var _hm_sprite = new THREE.Sprite(_hm_mat);
     // _hm_sprite.position.set(0, 5, 0);
-    // _hm_sprite.scale.set(_conv.widthInSegments() / 5, _conv.heightInSegments() / 5, 1);
+    // _hm_sprite.scale.set(10, _conv.heightInSegments() / 30, 1);
     // _scope.add(_hm_sprite);
     // // * __________________________________________________
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // HEIGHT + NORMAL MAPS
-    var normalShader = THREE.NormalMapShader;
-    var rx = 256, ry = 256;
-    var pars = {
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter,
-        format: THREE.RGBFormat
-    };
-    heightMap  = new THREE.WebGLRenderTarget(rx, ry, pars);
-    heightMap.texture.generateMipmaps = false;
-    normalMap = new THREE.WebGLRenderTarget(rx, ry, pars);
-    normalMap.texture.generateMipmaps = false;
-    uniformsNoise = {
-        time:   { value: 1.0 },
-        scale:  { value: new THREE.Vector2(1.5, 1.5) },
-        offset: { value: new THREE.Vector2(0, 0) }
-    };
-    uniformsNormal = THREE.UniformsUtils.clone(normalShader.uniforms);
-    uniformsNormal.height.value = 0.05;
-    uniformsNormal.resolution.value.set(rx, ry);
-    uniformsNormal.heightMap.value = heightMap.texture;
-    var vertexShader = document.getElementById('vertexShader').textContent;
+    // Загрузка шейдеров тирейна
+    var terrain_vert_sh = '';
+    var terrain_frag_sh = '';
+    var sh_loading_manager = new THREE.LoadingManager(function() {
+        // Загрузка текстур тирейна
+        var ocean_texture = {};
+        var sandy_texture = {};
+        var grass_texture = {};
+        var rocky_texture = {};
+        var water_tex = {};
+        var hmap_texture = {};
 
-    // TEXTURES
-    var loadingManager = new THREE.LoadingManager(function() {
-        //terrain.visible = true;
+        var tex_loading_manager = new THREE.LoadingManager(function() {
+            ocean_texture.wrapS = ocean_texture.wrapT = THREE.RepeatWrapping;
+            sandy_texture.wrapS = sandy_texture.wrapT = THREE.RepeatWrapping;
+            grass_texture.wrapS = grass_texture.wrapT = THREE.RepeatWrapping;
+            rocky_texture.wrapS = rocky_texture.wrapT = THREE.RepeatWrapping;
+            water_tex.wrapS = water_tex.wrapT = THREE.RepeatWrapping;
+            hmap_texture.wrapS = hmap_texture.wrapT = THREE.RepeatWrapping;
+
+            var custom_uniforms = {
+                height_texture: { type: "t", value: tir_hm_tex },
+                height_scale:   { type: "f", value: HEIGHT_SCALE },
+                route_width:    { type: "t", value: (conf.route_width * _conv.segmentWidth() / _conv.widthInSegments()) },
+                route_curve:    { type: "t", value: route_curve },
+                route_texture:  { type: "t", value: sandy_texture },
+                ocean_texture:  { type: "t", value: ocean_texture },
+                sandy_texture:  { type: "t", value: sandy_texture },
+                grass_texture:  { type: "t", value: grass_texture },
+                rocky_texture:  { type: "t", value: rocky_texture }
+            };
+            console.log('route_width: ' + custom_uniforms.route_width.value);
+
+            // Загрузка шейдеров
+            var terrain_material = new THREE.ShaderMaterial({
+                uniforms: custom_uniforms,
+                vertexShader: terrain_vert_sh,
+                fragmentShader: terrain_frag_sh
+            });
+            terrain_material.transparent = true;
+
+            // построение воды
+            var water_geo = new THREE.PlaneGeometry(1000, 1000, 1, 1);
+            water_tex.repeat.set(5, 5);
+            var water_mat = new THREE.MeshBasicMaterial({ map:water_tex, transparent:true, opacity:0.40 });
+            var water = new THREE.Mesh(water_geo, water_mat);
+            water.rotation.x = -Math.PI * 0.5;
+            _scope.add(water);
+
+            // var _mesh_tir = new THREE.SceneUtils.createMultiMaterialObject(_terrain_geometry, [
+            //     terrain_material,
+            //     new THREE.MeshLambertMaterial({map:tir_mask, alphaTest:0.5, transparent:true})
+            // ]);
+
+            var mesh_tir = new THREE.Mesh(_terrain_geometry, terrain_material);
+            mesh_tir.receiveShadow  = true;
+            _scope.add(mesh_tir);
+        });
+        var texture_loader = new THREE.TextureLoader(tex_loading_manager);
+        ocean_texture = texture_loader.load('textures/dirt-512.jpg');
+        sandy_texture = texture_loader.load('textures/sand-512.jpg');
+        grass_texture = texture_loader.load('textures/grass-512.jpg');
+        rocky_texture = texture_loader.load('textures/rock-512.jpg');
+        water_tex = texture_loader.load('textures/water512.jpg');
+        hmap_texture = texture_loader.load('textures/heightmap.png');
     });
-    var textureLoader = new THREE.TextureLoader(loadingManager);
-    var specularMap = new THREE.WebGLRenderTarget(2048, 2048, pars);
-    specularMap.texture.generateMipmaps = false;
-    var diffuseTexture1 = textureLoader.load("textures/grasslight-big.jpg");
-    var diffuseTexture2 = textureLoader.load("textures/backgrounddetailed6.jpg");
-    var detailTexture = textureLoader.load("textures/grasslight-big-nm.jpg");
-    diffuseTexture1.wrapS = diffuseTexture1.wrapT = THREE.RepeatWrapping;
-    diffuseTexture2.wrapS = diffuseTexture2.wrapT = THREE.RepeatWrapping;
-    detailTexture.wrapS = detailTexture.wrapT = THREE.RepeatWrapping;
-    specularMap.texture.wrapS = specularMap.texture.wrapT = THREE.RepeatWrapping;
-    // TERRAIN SHADER
-    var terrainShader = THREE.ShaderTerrain["terrain"];
-    uniformsTerrain = THREE.UniformsUtils.clone(terrainShader.uniforms);
-    uniformsTerrain['tNormal'].value = normalMap.texture;
-    uniformsTerrain['uNormalScale'].value = 3.5;
-    uniformsTerrain['tDisplacement'].value = heightMap.texture;
-    uniformsTerrain['tDiffuse1'].value = diffuseTexture1;
-    uniformsTerrain['tDiffuse2'].value = diffuseTexture2;
-    uniformsTerrain['tSpecular'].value = specularMap.texture;
-    uniformsTerrain['tDetail'].value = detailTexture;
-    uniformsTerrain['enableDiffuse1'].value = true;
-    uniformsTerrain['enableDiffuse2'].value = true;
-    uniformsTerrain['enableSpecular'].value = true;
-    uniformsTerrain['diffuse'].value.setHex(0xffffff);
-    uniformsTerrain['specular'].value.setHex(0x00ff00);
-    uniformsTerrain['shininess'].value = 30;
-    uniformsTerrain['uDisplacementScale'].value = 375;
-    uniformsTerrain['uRepeatOverlay'].value.set(1, _conv.height() / _conv.width());
-    var params = [
-        ['heightmap', document.getElementById('fragmentShaderNoise').textContent, vertexShader, uniformsNoise, false],
-        ['normal', normalShader.fragmentShader, normalShader.vertexShader, uniformsNormal, false],
-        ['terrain', terrainShader.fragmentShader, terrainShader.vertexShader, uniformsTerrain, true]
-    ];
-    var mlib = {};
-    for(var i = 0; i < params.length; i++) {
-        material = new THREE.ShaderMaterial( {
-            uniforms: 		params[i][3],
-            vertexShader: 	params[i][2],
-            fragmentShader: params[i][1],
-            lights: 		params[i][4],
-            fog: 			true
-        } );
-        mlib[params[i][0]] = material;
-    }
-    // var plane = new THREE.PlaneBufferGeometry(SCREEN_WIDTH, SCREEN_HEIGHT);
-    // quadTarget = new THREE.Mesh(plane, new THREE.MeshBasicMaterial({ color: 0x000000 }));
-    // quadTarget.position.z = -500;
-    // sceneRenderTarget.add(quadTarget);
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    var file_loader = new THREE.FileLoader(sh_loading_manager);
+    file_loader.load('shaders/Terrain.vert', function(data) {
+        terrain_vert_sh = data;
+    });
+    file_loader.load('shaders/Terrain.frag', function(data) {
+        terrain_frag_sh = data;
+    });
+
+///////////////////////////////////////////////////////////////////////////////////
     // TERRAIN MESH
     // var geometryTerrain = new THREE.PlaneBufferGeometry( 6000, 6000, 256, 256 );
     // THREE.BufferGeometryUtils.computeTangents( geometryTerrain );
@@ -1028,9 +1007,8 @@ MODELS.Terrain = function(conf) {
     // ]);
     // var _mat_tir = new THREE.MeshBasicMaterial({ color:0x0035f10, wireframe: true, transparent: true });
     // var _mesh_tir = new THREE.Mesh(_terrain_geometry, _mat_tir);
-    var _mesh_tir = new THREE.Mesh(_terrain_geometry, mlib['terrain']);
-    _mesh_tir.receiveShadow  = true;
-    _scope.add(_mesh_tir);
+    // var _mesh_tir = new THREE.Mesh(_terrain_geometry, mlib['terrain']);
+
 
     // var fx = generatePivoutPoints(46, 7, 14);
     // var spline_pivots = getSplinePivots(segments_width, segments_height, sw, sh, fx,
