@@ -186,3 +186,5 @@ UTILS.TextureLoader = function() {
     }
 };
 UTILS.TextureLoader.prototype = Object.create(THREE.ImageLoader.prototype);
+
+

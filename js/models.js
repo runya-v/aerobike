@@ -689,6 +689,7 @@ MODELS.Terrain = function(conf) {
         var swidth = conf.conv.width();
         var sheight = conf.conv.height();
         var i;
+        var y = 0;
         for (i = 0; i <= swidth; i++) {
             geometry.vertices.push(new THREE.Vector3(conf.pos_x + i, 0, -conf.pos_z));
         }
@@ -705,13 +706,31 @@ MODELS.Terrain = function(conf) {
                     x: conf.pos_x + (i - 0.5),
                     z: -(conf.pos_z + (j - 0.5))
                 };
-                var mv = new THREE.Vector3(vec.x, 0, vec.z);
+                if (conf.height_map) {
+                    map_id = conf.conv.pos({
+                        x: vec.x - conf.pos_x,
+                        z: -(vec.z + conf.pos_z)
+                    }).pos;
+                    y = conf.height_map[map_id] * conf.max_y;
+                } else {
+                    y = 0;
+                }
+                var mv = new THREE.Vector3(vec.x, y, vec.z);
                 geometry.vertices.push(mv);
 
                 // Верхняя правая точка сегмента
                 vec.x = conf.pos_x + i;
                 vec.z = -(conf.pos_z + j);
-                var lv = new THREE.Vector3(vec.x, 0, vec.z);
+                if (conf.height_map) {
+                    map_id = conf.conv.pos({
+                        x: vec.x - conf.pos_x,
+                        z: -(vec.z + conf.pos_z)
+                    }).pos;
+                    y = conf.height_map[map_id] * conf.max_y;
+                } else {
+                    y = 0;
+                }
+                var lv = new THREE.Vector3(vec.x, y, vec.z);
                 geometry.vertices.push(lv);
 
                 // Вычисление индексов точек для поверхностей текущего сектора
@@ -768,15 +787,6 @@ MODELS.Terrain = function(conf) {
      */
     function generateRouteTexture(conf) {
         var RGB = 3;
-        // // Получить максимальные значения координат
-        // var v_maxs = { x:1, y:1, z:1 };
-        // for (var i = 0; i < conf.map.length; i += RGB) {
-        //     if (v_maxs.x > conf.map[i]) { v_maxs.x = conf.map[i]; }
-        //     if (v_maxs.y > conf.map[i + 1]) { v_maxs.y = conf.map[i + 1]; }
-        //     if (v_maxs.z > conf.map[i + 2]) { v_maxs.z = conf.map[i + 2]; }
-        // }
-        // console.log('Maxs: ' + JSON.stringify(v_maxs));
-
         var RGBA = 4;
         var pixelData = new Uint8Array(conf.conv.heightInSegments() * RGBA);
         var did = 0;
@@ -878,6 +888,8 @@ MODELS.Terrain = function(conf) {
         conv: _conv,
         pos_x: -conf.width * 0.5,
         pos_z: -conf.height * 0.5,
+        height_map: _height_map,
+        max_y: _conv.widthInSegments() * 0.33
     };
     var _terrain_geometry = new Grid(grid_conf);
     _terrain_geometry.computeFaceNormals();
@@ -906,8 +918,8 @@ MODELS.Terrain = function(conf) {
     var tir_hm_tex = generateTerrainTexture(tirhmtex_conf);
 
     // // * Отрисовка маски
-    // var _hm_mat = new THREE.SpriteMaterial({ map: route_mask });
-    // //var _hm_mat = new THREE.SpriteMaterial({ map: tir_hm_tex });
+    // //var _hm_mat = new THREE.SpriteMaterial({ map: route_mask });
+    // var _hm_mat = new THREE.SpriteMaterial({ map: tir_hm_tex });
     // //var _hm_mat = new THREE.SpriteMaterial({ map: tir_mask });
     // var _hm_sprite = new THREE.Sprite(_hm_mat);
     // _hm_sprite.position.set(0, 5, 0);
@@ -935,7 +947,6 @@ MODELS.Terrain = function(conf) {
             grass_texture.wrapS = grass_texture.wrapT = THREE.RepeatWrapping;
             rocky_texture.wrapS = rocky_texture.wrapT = THREE.RepeatWrapping;
             water_tex.wrapS = water_tex.wrapT = THREE.RepeatWrapping;
-            hmap_texture.wrapS = hmap_texture.wrapT = THREE.RepeatWrapping;
 
             var custom_uniforms = {
                 height_texture: { type: "t", value: tir_hm_tex },
@@ -972,6 +983,7 @@ MODELS.Terrain = function(conf) {
             // ]);
 
             var mesh_tir = new THREE.Mesh(_terrain_geometry, terrain_material);
+            //var mesh_tir = new THREE.Mesh(_terrain_geometry, new THREE.MeshLambertMaterial({map:tir_mask, alphaTest:0.5, transparent:true}));
             mesh_tir.receiveShadow  = true;
             _scope.add(mesh_tir);
         });
@@ -981,7 +993,6 @@ MODELS.Terrain = function(conf) {
         grass_texture = texture_loader.load('textures/grass-512.jpg');
         rocky_texture = texture_loader.load('textures/rock-512.jpg');
         water_tex = texture_loader.load('textures/water512.jpg');
-        hmap_texture = texture_loader.load('textures/heightmap.png');
     });
     var file_loader = new THREE.FileLoader(sh_loading_manager);
     file_loader.load('shaders/Terrain.vert', function(data) {
@@ -990,62 +1001,5 @@ MODELS.Terrain = function(conf) {
     file_loader.load('shaders/Terrain.frag', function(data) {
         terrain_frag_sh = data;
     });
-
-///////////////////////////////////////////////////////////////////////////////////
-    // TERRAIN MESH
-    // var geometryTerrain = new THREE.PlaneBufferGeometry( 6000, 6000, 256, 256 );
-    // THREE.BufferGeometryUtils.computeTangents( geometryTerrain );
-
-    // var tir_texture = new THREE.ImageUtils.loadTexture('images/tir_39.jpg');
-    // tir_texture.wrapS = THREE.RepeatWrapping;
-    // tir_texture.wrapT = THREE.RepeatWrapping;
-    // tir_texture.repeat.set(10, 10 * _conv.height() / _conv.width());
-    // var _mesh_tir = new THREE.SceneUtils.createMultiMaterialObject(_terrain_geometry, [
-    //     //new THREE.MeshBasicMaterial({map:tir_texture, transparent:true}),
-    //     new THREE.MeshLambertMaterial({map:tir_mask, alphaTest:0.5, transparent:true}),
-    //     new THREE.MeshLambertMaterial({map:route_mask, alphaTest:0.5, transparent:true})
-    // ]);
-    // var _mat_tir = new THREE.MeshBasicMaterial({ color:0x0035f10, wireframe: true, transparent: true });
-    // var _mesh_tir = new THREE.Mesh(_terrain_geometry, _mat_tir);
-    // var _mesh_tir = new THREE.Mesh(_terrain_geometry, mlib['terrain']);
-
-
-    // var fx = generatePivoutPoints(46, 7, 14);
-    // var spline_pivots = getSplinePivots(segments_width, segments_height, sw, sh, fx,
-    //                                     _terrain_geometry.faces, _terrain_geometry.vertices);
-
-    // var tir_sh = segments_width; // Число сегментов тирейна в ширину.
-    // var route_w = 4; // Ширина трассы
-    // var route_h = height; // Длинна проекции трассы
-    // var route_sw = route_w * sw; // Число сегментов трассы в ширину
-    // var route_sh = segments_height; // Число сегментов трассы в длинну.
-    // var _route_geometry = new Grid(route_w / route_sw, route_h / route_sh, -route_w * 0.5, -route_h * 0.5, route_sw, route_sh);
-    // setRoute(spline_pivots, width, route_w, route_sw, tir_sh, segments_height,
-    //         _terrain_geometry.faces, _terrain_geometry.vertices,
-    //         _route_geometry.faces, _route_geometry.vertices);
-
-    // // Создание итоговой сетки и применение к ней материала
-    // var tir_texture = new THREE.ImageUtils.loadTexture('images/tir_39.jpg');
-    // tir_texture.wrapS = THREE.RepeatWrapping;
-    // tir_texture.wrapT = THREE.RepeatWrapping;
-    // tir_texture.repeat.set(2, 2);
-    // var tir_bump = new THREE.ImageUtils.loadTexture('images/bumpmap.jpg');
-    // var _mat_tir = new THREE.MeshPhongMaterial({
-    //     map:tir_texture,
-    //     mapScale:10,
-    //     bumpMap:tir_bump,
-  	 //   bumpScale:10
-    // });
-    // _terrain_geometry.computeFaceNormals();
-    // _terrain_geometry..computeVertexNormals();
-    // _terrain_geometry..computeTangents();
-    // var _mesh_tir = new THREE.Mesh(_terrain_geometry, _mat_tir);
-    // _mesh_tir.receiveShadow  = true;
-    // _scope.add(_mesh_tir);
-
-    // var _mat_route = new THREE.MeshBasicMaterial({ color:0x0000ffaa, transparent: true });
-    // _route_geometry.computeFaceNormals();
-    // var _mesh_route = new THREE.Mesh(_route_geometry, _mat_route);
-    // _scope.add(_mesh_route);
 };
 MODELS.Terrain.prototype = Object.create(THREE.Group.prototype);
