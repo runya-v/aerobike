@@ -4,13 +4,10 @@
         <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
         <title>Viewer Aerobike</title>
         <link rel="stylesheet" href="styles.css">
-        <script src="js/three.min.js"></script>
-        <script src="js/OrbitControls.js"></script>
-        <script src="js/MorphAnimMesh.js"></script>
-        <script src="js/ColladaAnimation.js"></script>
-        <script src="js/ColladaAnimationHandler.js"></script>
-        <script src="js/ColladaKeyFrameAnimation.js"></script>
-        <script src="js/ColladaLoader.js"></script>
+        <script src="js/libs/three.min.js"></script>
+        <script src="js/libs/OrbitControls.js"></script>
+        <script src="js/libs/MorphAnimMesh.js"></script>
+        <script src="js/libs/FBXLoader.js"></script>
         <script src="js/utils.js"></script>
     </head>
     <body>
@@ -53,8 +50,20 @@
             var animations = [];
             var load_count = 0;
             var files_count = 0;
+            var mixers = [];
 
-            function main() {
+            var onProgress = function(xhr) {
+                if (xhr.lengthComputable) {
+                    var percentComplete = xhr.loaded / xhr.total * 100;
+                    console.log( Math.round(percentComplete, 2 ) + '% downloaded');
+                }
+            };
+
+            var onError = function(xhr) {
+                console.log('ERROR: ' + JSON.stringify(xhr));
+            };
+
+            (function() {
                 renderer = new THREE.WebGLRenderer({antialias: true, alpha: false});
                 renderer.setClearColor(0xFFA500);
                 renderer.setPixelRatio(window.devicePixelRatio);
@@ -81,30 +90,25 @@
                 load_model_btn.addEventListener('click', function(e) {
                     var input_file = document.getElementById('input_file');
                     input_file.addEventListener("change", function(e) {
+                        var manager = new THREE.LoadingManager();
+                        manager.onProgress = function(item, loaded, total) {
+                            console.log(item, loaded, total);
+                        };
                         var files = this.files;
                         files_count = files.length;
                         for (var f = 0; f <  files.length; ++f) {
-                            var dae_name = './collada/' + files[f].name;
-                            var loader = new THREE.ColladaLoader();
-                            loader.load(dae_name, function (collada) {
-                                console.log('file: ' + dae_name);
-                                var dae = collada.scene;
-                                dae.traverse(function(child) {
-                                    if (child instanceof THREE.SkinnedMesh) {
-                                        animations[load_count] = new THREE.Animation(child, child.geometry.animation);
-                                        camera.lookAt(child.position);
-                                        ++load_count;
-                                        if (load_count == files_count) {
-                                            for(var animation in animations) {
-                                                animations[animation].play();
-                                            }
-                                            console.log("play animations");
-                                        }
-                                    }
-                                });
-                                dae.updateMatrix();
-                                group.add(dae);
-                            });
+                            var file_name = './models/' + files[f].name;
+                            var loader = new THREE.FBXLoader(manager);
+                            loader.load(file_name, function(object) {
+                                if (typeof object.animations !== 'undefined') {
+                                    object.mixer = new THREE.AnimationMixer(object);
+                                    mixers.push(object.mixer);
+                                    var action = object.mixer.clipAction(object.animations[0]);
+                                    action.play();
+                                    console.log('Animation.play()');
+                                }
+                                scene.add(object);
+                            }, onProgress, onError);
                         }
                     }, false);
                     input_file.click();
@@ -115,7 +119,9 @@
                 document.addEventListener('touchmove', onDocumentTouchMove, false);
 
                 window.addEventListener('resize', onWindowResize, false);
-            } main();
+
+                animate();
+            })();
 
             function onDocumentMouseDown(e) {
                 e.preventDefault();
@@ -181,9 +187,13 @@
 
             function animate() {
                 requestAnimationFrame(animate);
-                THREE.AnimationHandler.update(clock.getDelta());
+                if (mixers.length > 0) {
+                    for (var i = 0; i < mixers.length; ++i) {
+                        mixers[i].update(clock.getDelta());
+                    }
+                }
                 render();
-            } animate();
+            };
         </script>
     </body>
 </html>

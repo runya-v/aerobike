@@ -131,7 +131,7 @@ UTILS.ColladaLoader = function() {
     this.load = function(url, on_load) {
         _on_load = on_load;
         _scope.constructor.prototype.load.call(url, onLoad);
-    }
+    };
 
     function onLoad(collada) {
         var dae = collada.scene;
