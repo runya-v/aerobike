@@ -31,6 +31,6 @@ CONTROLLERS.BikeControls = function(Bike, terrain, domElement) {
     var _self = this;
     var _last_position = new THREE.Vector3();
 
-    
+        
 };
 CONTROLLERS.BikeControls.prototype = Object.create(THREE.EventDispatcher.prototype);
