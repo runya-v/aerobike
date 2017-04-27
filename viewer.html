@@ -78,6 +78,9 @@
                     loader.parse(e.target.result, function(collada) {
                         var dae = collada.scene;
                         dae.traverse(function(child) {
+                            if( child.material) {
+                                child.material.transparent = true;
+                            }
                             if (child instanceof THREE.SkinnedMesh) {
                                 animations[load_count] = new THREE.Animation(child, child.geometry.animation);
                                 camera.lookAt(child.position);
