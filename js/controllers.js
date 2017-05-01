@@ -7,7 +7,7 @@
 var CONTROLLERS = {};
 
 
-CONTROLLERS.BikeControls = function(bike, terrain, domElement) {
+CONTROLLERS.BikeController = function(bike, terrain, domElement) {
     var EPS = 0.000001;
     var PIXELS_PER_ROUND = 1800;
     var ROTATE_ANGLE = 2;
@@ -82,7 +82,7 @@ CONTROLLERS.BikeControls = function(bike, terrain, domElement) {
     this.update = function() {
         if (bike && terrain) {
 
-        }
-    }
+        };
+    };
 };
-CONTROLLERS.BikeControls.prototype = Object.create(THREE.EventDispatcher.prototype);
+CONTROLLERS.BikeController.prototype = Object.create(THREE.EventDispatcher.prototype);
