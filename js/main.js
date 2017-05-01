@@ -373,7 +373,7 @@ AEROBIKE.Game = function(renderer, on_return_game) {
         new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
     var _scope = this;
     var _display = new UTILS.Display(document.getElementById("game_screen"));
-    var _controls;
+    var _controls = {};
 
     // document.getElementById("game_garage_img_bt").addEventListener("click", on_return_game, false);
     //
@@ -397,7 +397,11 @@ AEROBIKE.Game = function(renderer, on_return_game) {
         segments_width: 320,
         segments_height: 1600
     };
-    _group.add(new MODELS.Terrain(_tir_conf));
+    var _tirrain = new MODELS.Terrain(_tir_conf);
+    var _bike = MODELS.TestObject({ fill_color: 0xff7733, line_color: 0x00ff00, size: 1.5 });
+    _group.add(_bike);
+    var _bike_controller = new CONTROLLERS.BikeController(_bike, _tirrain);
+    _group.add(_tirrain);
     _group.position.y = -5;
     _scope.scene.add(_group);
 
@@ -488,6 +492,7 @@ AEROBIKE.Game = function(renderer, on_return_game) {
         //_scope.camera.position.y += (-(_mouse_y * 0.01) * Y_VIEW_PERCENT - _scope.camera.position.y) * 0.1;
         //_scope.camera.lookAt(_scope.scene.position);
         _controls.update();
+        _bike_controller.update();
     };
 
     this.hide = function() {

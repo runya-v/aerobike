@@ -193,16 +193,16 @@ MODELS.Terrain = function(conf) {
                 x: (pos % conf.segments_width),
                 y: 0,
                 z: Math.floor(pos / conf.segments_width)
-            }
-        }
+            };
+        };
 
         this.vec = function(sx, sy) {
             return {
                 x: (sx * conf.segm_w),
                 y: 0,
                 z: (sy * conf.segm_h)
-            }
-        }
+            };
+        };
     };
 
 
@@ -991,3 +991,22 @@ MODELS.Terrain = function(conf) {
     };
 };
 MODELS.Terrain.prototype = Object.create(THREE.Group.prototype);
+
+/**
+ * Генератор трассы
+ * fill_color - Цвет заполнения полигона.
+ * line_color - Цвет контурных линий.
+ * size       - Размер объекта.
+ */
+MODELS.TestObject = function(conf) {
+    var darkMaterial = new THREE.MeshBasicMaterial( { color: conf.fill_color } );
+    var wireframeMaterial = new THREE.MeshBasicMaterial( { color: conf.line_color, wireframe: true, transparent: true } );
+    var multiMaterial = [ 
+    	darkMaterial, 
+    	wireframeMaterial 
+    ];
+    var octagedron = new THREE.OctahedronGeometry(conf.size, 0);
+    var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
+    return shape;
+};
+MODELS.TestObject = Object.create(THREE.Group.prototype);
