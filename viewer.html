@@ -14,7 +14,7 @@
     <script src="js/utils.js"></script>
 </head>
 <body>
-<div id="scene_container"/>
+<div id="scene_container"></div>
 <div id="viewer_menu">
     <style>
         #viewer_menu {
@@ -80,6 +80,7 @@
                         dae.traverse(function(child) {
                             if( child.material) {
                                 child.material.transparent = true;
+						        child.material.side = THREE.DoubleSide;
                             }
                             if (child instanceof THREE.SkinnedMesh) {
                                 animations[load_count] = new THREE.Animation(child, child.geometry.animation);
