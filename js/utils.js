@@ -125,20 +125,24 @@ UTILS.ProgressManager.prototype = Object.create(THREE.LoadingManager.prototype);
 
 UTILS.ColladaLoader = function() {
     THREE.ColladaLoader.call(this);
+    this.options.convertUpAxis = true;
     var _scope = this;
     var _on_load;
 
-    this.load = function(url, on_load) {
-        _on_load = on_load;
-        _scope.constructor.prototype.load.call(url, onLoad);
-    };
-
     function onLoad(collada) {
         var dae = collada.scene;
-        var animation;
-        dae.traverse(function (child) {
+        dae.traverse(function(child) {
+            if( child.material) {
+                child.material.transparent = true;
+                child.material.side = THREE.DoubleSide;
+            }
             if (child instanceof THREE.SkinnedMesh) {
-                animation = new THREE.Animation(child, child.geometry.animation);
+                animations[load_count] = new THREE.Animation(child, child.geometry.animation);
+                camera.lookAt(child.position);
+                for(var animation in animations) {
+                    animations[animation].play();
+                }
+                console.log("play animations");
             }
         });
         dae.updateMatrix();
@@ -146,21 +150,55 @@ UTILS.ColladaLoader = function() {
             _on_load(dae, animation);
         }
     }
+
+    this.load = function(url, on_load) {
+        _on_load = on_load;
+        _scope.constructor.prototype.load.call(url, onLoad);
+    };
 };
 UTILS.ColladaLoader.prototype = Object.create(THREE.ColladaLoader.prototype);
 
-//var callbackProgress = function( progress, result ) {
-//
-//    var bar = 250,
-//        total = progress.totalModels + progress.totalTextures,
-//        loaded = progress.loadedModels + progress.loadedTextures;
-//
-//    if ( total )
-//        bar = Math.floor( bar * loaded / total );
-//
-//    $( "bar" ).style.width = bar + "px";
-//
-//};
+
+UTILS.ModelLoader = function() {
+    var _url = 'models/';
+    var _model;
+    var _loader = new THREE.ColladaLoader();
+
+    this.load = function(callback, file_name) {
+        _loader.options.convertUpAxis = true;
+        _loader.load(_url + file_name, function(collada) {
+            var dae = collada.scene;
+            dae.traverse(function(child) {
+                if( child.material) {
+                    child.material.transparent = true;
+                    child.material.side = THREE.DoubleSide;
+                }
+                if (child instanceof THREE.SkinnedMesh) {
+                    animations[load_count] = new THREE.Animation(child, child.geometry.animation);
+                    camera.lookAt(child.position);
+                    ++load_count;
+                    if (load_count == files_count) {
+                        for(var animation in animations) {
+                            animations[animation].play();
+                        }
+                        console.log("play animations");
+                    }
+                }
+            });
+            dae.updateMatrix();
+            if (callback) {
+                callback(dae);
+            }
+            _model = dae;
+        }, function(xhr) {
+            console.log( (xhr.loaded / xhr.total * 100) + '% loaded');
+        });
+    };
+
+    this.getModel = function() {
+        return _model;
+    }
+};
 
 
 UTILS.TextureLoader = function() {

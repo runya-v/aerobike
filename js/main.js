@@ -398,9 +398,9 @@ AEROBIKE.Game = function(renderer, on_return_game) {
         segments_height: 1600
     };
     var _tirrain = new MODELS.Terrain(_tir_conf);
-    var _bike = MODELS.TestObject({ fill_color: 0xff7733, line_color: 0x00ff00, size: 1.5 });
-    _group.add(_bike);
-    var _bike_controller = new CONTROLLERS.BikeController(_bike, _tirrain);
+    //var _bike = MODELS.TestObject({ fill_color: 0xff7733, line_color: 0x00ff00, size: 1.5 });
+    //_group.add(_bike);
+    //var _bike_controller = new CONTROLLERS.BikeController(_bike, _tirrain);
     _group.add(_tirrain);
     _group.position.y = -5;
     _scope.scene.add(_group);
@@ -492,7 +492,7 @@ AEROBIKE.Game = function(renderer, on_return_game) {
         //_scope.camera.position.y += (-(_mouse_y * 0.01) * Y_VIEW_PERCENT - _scope.camera.position.y) * 0.1;
         //_scope.camera.lookAt(_scope.scene.position);
         _controls.update();
-        _bike_controller.update();
+        //_bike_controller.update();
     };
 
     this.hide = function() {
