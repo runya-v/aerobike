@@ -13,6 +13,7 @@ CONTROLLERS.BikeController = function(bike, terrain, domElement) {
     var ROTATE_ANGLE = 2;
     var SPEED_UP = 2;
     var SPEED_DOWN = 2;
+    var HEIGHT
 
     this.keys = {
         LEFT: 37,
@@ -81,7 +82,12 @@ CONTROLLERS.BikeController = function(bike, terrain, domElement) {
 
     this.update = function() {
         if (bike && terrain) {
-
+			/// Получить текущую позицию.
+			var pos = bike.position.get();
+			/// Получить высоту в позиции.
+			var height_vec = terrain.getVertexByPos(pos);
+			/// Плавно откорректировать высоту.
+			bike.position.y = pos.y;
         };
     };
 };

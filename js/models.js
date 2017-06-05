@@ -23,30 +23,15 @@ MODELS.BikePelican = function() {
     var _load_count = 0;
 
     // Загрузка байка
-    loadModel("collada/bike_01.dae");
+    loadModel("bike.dae");
     // Загрузка рокетного двигателя
-    loadModel("collada/mono_jet_01.dae");
+    loadModel("mono_jet_01.dae");
 
     function loadModel(model_file) {
-        var loader = new THREE.ColladaLoader();
-        loader.load(model_file, function (collada) {
-            console.log('model file: ' + model_file);
-            var dae = collada.scene;
-            dae.traverse(function(child) {
-                if (child instanceof THREE.SkinnedMesh) {
-                    _animations[_load_count] = new THREE.Animation(child, child.geometry.animation);
-                    ++_load_count;
-                    if (_load_count == 2) {
-                        for(var animation in _animations) {
-                            _animations[animation].play();
-                        }
-                        console.log("play animations");
-                    }
-                }
-            });
-            dae.updateMatrix();
-            _scope.add(dae);
-        });
+        var loader = new UTILS.ModelLoader();
+        loader.load(function(model) {
+            _scope.add(model);
+        }, model_file);
     }
 
     this.update = function(dclock) {
@@ -973,6 +958,29 @@ MODELS.Terrain = function(conf) {
     });
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	/*
+	 * \brief  Метод выполняет поиск ближайшей точки сетки для переданного вектора.
+	 * \param  vec_::{x, y, z} Произвольный вектор.
+	 * \return  Возвращается вектор с установленной высотой для переданной позиции. 
+	 */
+	this.getVertexByPos = function(vec_) {
+		var v = {
+			x:vec_.x, y:0, z:vec_.z
+		};
+		// Получить смещение трассы относительно расположения трассы.
+		var sub_swidth = conf.conv.width() * 0.5;
+        var sub_sheight = conf.conv.height() * 0.5;
+        // Проверить принадлежность точки площади трассы.
+        if ((-sub_swidth <= vec_.x && vec_.x <= sub_swidth) && 
+        	(-sub_sheight <= vec_.z && vec_.z <= sub_sheight)) {
+        	// Получить индекс карты высот наиболее соотвествующий переданным координатам. 
+	        var pos = conf.conv.pos(v);
+	        // Сохранить высоту.
+        	v.y = _height_map[pos];
+        }
+        return v;
+	};
+
     // Методы "гетеры"
     this.getHeightMap = function() {
         return _height_map;
@@ -992,8 +1000,9 @@ MODELS.Terrain = function(conf) {
 };
 MODELS.Terrain.prototype = Object.create(THREE.Group.prototype);
 
+
 /**
- * Генератор трассы
+ * Тестовый объект сцены.
  * fill_color - Цвет заполнения полигона.
  * line_color - Цвет контурных линий.
  * size       - Размер объекта.
