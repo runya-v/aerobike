@@ -25,7 +25,7 @@ MODELS.BikePelican = function() {
     var _load_count = 0;
 
     /// Загрузка байка.
-    loadModel("models/bike.dae");
+    loadModel("models/pelican.dae");
     /// Загрузка рокетного двигателя.
     //loadModel("mono_jet_01.dae");
 
