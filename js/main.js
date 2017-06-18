@@ -373,7 +373,6 @@ AEROBIKE.Game = function(renderer, on_return_game) {
         new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000));
     var _scope = this;
     var _display = new UTILS.Display(document.getElementById("game_screen"));
-    var _controls = {};
 
     // document.getElementById("game_garage_img_bt").addEventListener("click", on_return_game, false);
     //
@@ -397,11 +396,11 @@ AEROBIKE.Game = function(renderer, on_return_game) {
         segments_width: 320,
         segments_height: 1600
     };
-    var _tirrain = new MODELS.Terrain(_tir_conf);
-    //var _bike = MODELS.TestObject({ fill_color: 0xff7733, line_color: 0x00ff00, size: 1.5 });
-    //_group.add(_bike);
-    //var _bike_controller = new CONTROLLERS.BikeController(_bike, _tirrain);
-    _group.add(_tirrain);
+    var _terrain = new MODELS.Terrain(_tir_conf);
+    _group.add(_terrain);
+    var _bike = new MODELS.BikePelican();
+    _group.add(_bike);
+    var _bike_controller = new CONTROLLERS.BikeController(_bike, _terrain, _scope.camera, _scope.renderer.domElement);
     _group.position.y = -5;
     _scope.scene.add(_group);
 
@@ -413,9 +412,7 @@ AEROBIKE.Game = function(renderer, on_return_game) {
     //_scope.scene.add(new THREE.AmbientLight(0xffffff));
     //_scope.scene.add(new THREE.SpotLight(0xffffff));
 
-    //_scope.camera.position.y = 1;
-    _scope.camera.position.z = 10;
-    _controls = new THREE.OrbitControls(_scope.camera, _scope.renderer.domElement);
+    var _cam_controller = new CONTROLLERS.CameraController(_scope.camera, _bike, _terrain, _scope.renderer.domElement);
 
     var X_VIEW_PERCENT = 0.9;
     var Y_VIEW_PERCENT = 0.7;
@@ -466,33 +463,23 @@ AEROBIKE.Game = function(renderer, on_return_game) {
     function onDocumentTouchStart(e) {
         if (e.touches.length === 1) {
             e.preventDefault();
-            //_mouse_x_on_mouse_down = e.touches[0].pageX - _window_half_x;
-            //_target_rotation_on_mouse_down = _target_rotation;
         }
     }
 
     function onDocumentTouchMove(e) {
         if (e.touches.length === 1) {
             e.preventDefault();
-            //_mouse_x = e.touches[0].pageX - _window_half_x;
-            //_target_rotation = _target_rotation_on_mouse_down + (_mouse_x - _mouse_x_on_mouse_down) * 0.05;
         }
     }
 
     this.resize = function() {
-        _mouse_y = 0;
-        _window_half_y  = window.innerHeight * 0.5;
-        _base_y_cam_pos = window.innerHeight * BASE_CAMERA_POS_PERCENT;
         _scope.camera.aspect = window.innerWidth / window.innerHeight;
         _scope.camera.updateProjectionMatrix();
     };
 
-    this.update = function(dclock) {
-        //_group.rotation.y = _group.rotation.y += (_target_rotation - _group.rotation.y) * 0.05;
-        //_scope.camera.position.y += (-(_mouse_y * 0.01) * Y_VIEW_PERCENT - _scope.camera.position.y) * 0.1;
-        //_scope.camera.lookAt(_scope.scene.position);
-        _controls.update();
-        //_bike_controller.update();
+    this.update = function(dt_) {
+        _bike_controller.update(dt_);
+        _cam_controller.update(dt_);
     };
 
     this.hide = function() {
@@ -644,6 +631,7 @@ AEROBIKE.Main = function() {
 
     function animate() {
         requestAnimationFrame(animate);
+        THREE.AnimationHandler.update(_clock.getDelta());
         render();
     } animate();
 };
