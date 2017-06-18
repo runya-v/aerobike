@@ -160,13 +160,13 @@ UTILS.ColladaLoader.prototype = Object.create(THREE.ColladaLoader.prototype);
 
 
 UTILS.ModelLoader = function() {
-    var _url = 'models/';
     var _model;
     var _loader = new THREE.ColladaLoader();
 
     this.load = function(callback, file_name) {
         _loader.options.convertUpAxis = true;
-        _loader.load(_url + file_name, function(collada) {
+        var url = file_name;
+        _loader.load(url, function(collada) {
             var dae = collada.scene;
             dae.traverse(function(child) {
                 if( child.material) {
@@ -176,22 +176,19 @@ UTILS.ModelLoader = function() {
                 if (child instanceof THREE.SkinnedMesh) {
                     animations[load_count] = new THREE.Animation(child, child.geometry.animation);
                     camera.lookAt(child.position);
-                    ++load_count;
-                    if (load_count == files_count) {
-                        for(var animation in animations) {
-                            animations[animation].play();
-                        }
-                        console.log("play animations");
+                    for(var animation in animations) {
+                        animations[animation].play();
                     }
+                    console.log("play animations");
                 }
             });
             dae.updateMatrix();
+            _model = dae;
             if (callback) {
                 callback(dae);
             }
-            _model = dae;
         }, function(xhr) {
-            console.log( (xhr.loaded / xhr.total * 100) + '% loaded');
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
         });
     };
 
@@ -199,6 +196,39 @@ UTILS.ModelLoader = function() {
         return _model;
     }
 };
+
+
+UTILS.Easing = {
+    // no easing, no acceleration
+    linear: function(t) { return t },
+    // accelerating from zero velocity
+    inQuad: function(t) { return t*t },
+    // decelerating to zero velocity
+    outQuad: function(t) { return t*(2-t) },
+    // acceleration until halfway, then deceleration
+    inOutQuad: function(t) { return t<.5 ? 2*t*t : -1+(4-2*t)*t },
+    // accelerating from zero velocity
+    inCubic: function(t) { return t*t*t },
+    // decelerating to zero velocity
+    outCubic: function(t) { return (--t)*t*t+1 },
+    // acceleration until halfway, then deceleration
+    inOutCubic: function(t) { return t<.5 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1 },
+    // accelerating from zero velocity
+    inQuart: function(t) { return t*t*t*t },
+    // decelerating to zero velocity
+    outQuart: function(t) { return 1-(--t)*t*t*t },
+    // acceleration until halfway, then deceleration
+    inOutQuart: function(t) { return t<.5 ? 8*t*t*t*t : 1-8*(--t)*t*t*t },
+    // accelerating from zero velocity
+    inQuint: function(t) { return t*t*t*t*t },
+    // decelerating to zero velocity
+    outQuint: function(t) { return 1+(--t)*t*t*t*t },
+    // acceleration until halfway, then deceleration
+    inOutQuint: function(t) { return t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t }
+};
+
+
+
 
 
 UTILS.TextureLoader = function() {

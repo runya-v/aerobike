@@ -14,6 +14,8 @@ MODELS.BikePelican = function() {
 
     var DGRAD = 5;
     var FLOUTIN_DISTANCE_PERCENT = 0.001;
+    var MAX_SPEED = 0.6; ///< Метра в секунду. ~= 110 км/ч
+    var SPEEDUP = 6; ///< Разгон до предельной скорости.
 
     var _scope = this;
     var _animation;
@@ -22,16 +24,16 @@ MODELS.BikePelican = function() {
     var _animations = [];
     var _load_count = 0;
 
-    // Загрузка байка
-    loadModel("bike.dae");
-    // Загрузка рокетного двигателя
-    loadModel("mono_jet_01.dae");
+    /// Загрузка байка.
+    loadModel("models/bike.dae");
+    /// Загрузка рокетного двигателя.
+    //loadModel("mono_jet_01.dae");
 
-    function loadModel(model_file) {
+    function loadModel(file_name_) {
         var loader = new UTILS.ModelLoader();
-        loader.load(function(model) {
-            _scope.add(model);
-        }, model_file);
+        loader.load(function(model_) {
+            _scope.add(model_);
+        }, file_name_);
     }
 
     this.update = function(dclock) {
@@ -41,6 +43,14 @@ MODELS.BikePelican = function() {
         _scope.position.y += Math.sin(_alpha * (Math.PI / 180.0)) * FLOUTIN_DISTANCE_PERCENT;
         _alpha += dclock * 200;
     };
+
+    this.getMaxSpeed = function() {
+        return MAX_SPEED;
+    }
+
+    this.getSpeedUp = function() {
+        return SPEEDUP;
+    }
 };
 MODELS.BikePelican.prototype = Object.create(THREE.Group.prototype);
 
@@ -81,7 +91,7 @@ MODELS.Cloud = function(min_x, min_y, min_z, max_x, max_y, max_z) {
 
     function getCoordinate(max) {
         var probs = [0.59, 0.55, 0.51, 0.5, 0.49, 0.45, 0.42, 0.41, 0.405, 0.4, 0.39, 0.35,
-            0.32, 0.3, 0.29, 0.25, 0.2, 0.15, 0.1, 0.05, 0.02, 0.01];
+                     0.32, 0.3, 0.29, 0.25, 0.2, 0.15, 0.1, 0.05, 0.02, 0.01];
         return max * 0.5 - max * Math.floor(probs.length * Math.random());
     }
 
@@ -108,29 +118,31 @@ MODELS.Cloud.prototype = Object.create(THREE.Group.prototype);
 
 
 /**
- * Генератор трассы
- * width           - Ширина холмистого ландшафта
- * height          - Длинна холмистого ландшафта
- * segments_width  - Ширина сегмента сетки поверхности
- * segments_height - длинна сегмента сетки поверхности
+ * /brief  Генератор трассы
+ * /param  width           - Ширина холмистого ландшафта
+ * /param  height          - Длинна холмистого ландшафта
+ * /param  segments_width  - Ширина сегмента сетки поверхности
+ * /param  segments_height - длинна сегмента сетки поверхности
  */
 MODELS.Terrain = function(conf) {
     THREE.Group.call(this);
     var _scope = this;
 
-    var NUM_HILLS = conf.hills_num;  ///< Количество генерируемых холмов
-    var ROUTE_HEGHT_PERCENT = 0.55;   ///< Процент от средней высоты в зоне ландшафта под опорной точкой перегиба трассы
-    var MIN_ROUTE_PIVOUT_COUNT = 5;  ///< Минимальное число поворотов трассы
-    var MAX_ROUTE_PIVOUT_COUNT = 20; ///< Максимальное число поворотов трассы
+    var NUM_HILLS = conf.hills_num;  ///< Количество генерируемых холмов.
+    var ROUTE_HEGHT_PERCENT = 0.55;  ///< Процент от средней высоты в зоне ландшафта под опорной точкой перегиба трассы.
+    var MIN_ROUTE_PIVOUT_COUNT = 5;  ///< Минимальное число поворотов трассы.
+    var MAX_ROUTE_PIVOUT_COUNT = 20; ///< Максимальное число поворотов трассы.
     var ROUTE_Y_BASE = 0.02;
     var HEIGHT_SCALE = 60.0;
+    var MAX_Y_BY_WIDTH_PERCENT = 0.33; ///< Процент процент от ширины тирейна для определения максимальной высоты.
+
 
     /**
-     * Конвертор координаты <-> индекс на карте высот. Координаты и карта высот должны иметь единый центр координат
-     * width       - Координатная ширина
-     * height      - Координатная длинна
-     * segm_width  - Ширина в сегментах
-     * segm_height - Длинна в сегментах
+     * /brief  Конвертор координаты <-> индекс на карте высот. Координаты и карта высот должны иметь единый центр координат
+     * /param  width       - Координатная ширина
+     * /param  height      - Координатная длинна
+     * /param  segm_width  - Ширина в сегментах
+     * /param  segm_height - Длинна в сегментах
      */
     Converter = function(conf) {
         conf.segments_width = conf.segments_width;
@@ -191,7 +203,7 @@ MODELS.Terrain = function(conf) {
     };
 
 
-    /**
+    /*
      * Генерация карты высот
      * hills - Необходимое число холмов
      * width - Ширина в сегментах
@@ -276,7 +288,7 @@ MODELS.Terrain = function(conf) {
         return d;
     };
 
-    /** 
+    /*
      * Вычисление точек для направляющих векторов лежащих на касательной к кривой в заданной точке 
      * koords - Длинна сегмента
      */
@@ -334,7 +346,7 @@ MODELS.Terrain = function(conf) {
         return res;
     }
 
-    /**
+    /*
      * Вычисление значения координаты для 4 для 4- х точек, описывающих отрезок кривой 
      * t      - Прочент от общего отрезка кривой
      * p0     - Координата начала отрезка кривой
@@ -350,7 +362,7 @@ MODELS.Terrain = function(conf) {
                conf.p3 * conf.t * conf.t * conf.t;
     }
 
-    /** 
+    /*
      * Генерация точек перегиба в горизонтальной плоскости
      * width       - ширина ландшафта
      * route_width - ширина трассы
@@ -371,7 +383,7 @@ MODELS.Terrain = function(conf) {
         return fx;
     }
 
-    /**
+    /*
      * Итератор по рядам точек
      * start,   - стартовый идентификатор ряда точек сетки
      * fw,      - количесво сегментов сетки в ширину
@@ -428,7 +440,7 @@ MODELS.Terrain = function(conf) {
         };
     };
 
-    /**
+    /*
      * Вычисление процента вертикальных подъемов от максимальной в пределах зоны, для ключевых точек горизонтальных изгибов трассы
      * height_map   - Карта высот тирейна,
      * route_width  - Ширина трассы в сегментах,
@@ -479,7 +491,7 @@ MODELS.Terrain = function(conf) {
         return res;
     }
 
-    /**
+    /*
      * Получение кривой обочин трассы
      * height_map  - Карта высот тирейна,
      * conv        - Конвертер координаты - индексы карты высот,
@@ -861,7 +873,7 @@ MODELS.Terrain = function(conf) {
         pos_x: -conf.width * 0.5,
         pos_z: -conf.height * 0.5,
         height_map: _height_map,
-        max_y: _conv.widthInSegments() * 0.33
+        max_y: _conv.widthInSegments() * MAX_Y_BY_WIDTH_PERCENT
     };
     var _terrain_geometry = new Grid(grid_conf);
     _terrain_geometry.computeFaceNormals();
@@ -958,7 +970,7 @@ MODELS.Terrain = function(conf) {
     });
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/*
+	/**
 	 * \brief  Метод выполняет поиск ближайшей точки сетки для переданного вектора.
 	 * \param  vec_::{x, y, z} Произвольный вектор.
 	 * \return  Возвращается вектор с установленной высотой для переданной позиции. 
@@ -967,21 +979,28 @@ MODELS.Terrain = function(conf) {
 		var v = {
 			x:vec_.x, y:0, z:vec_.z
 		};
-		// Получить смещение трассы относительно расположения трассы.
-		var sub_swidth = conf.conv.width() * 0.5;
-        var sub_sheight = conf.conv.height() * 0.5;
+		/// Получить смещение трассы относительно расположения трассы.
+		var sub_swidth = _conv.width() * 0.5;
+        var sub_sheight = _conv.height() * 0.5;
         // Проверить принадлежность точки площади трассы.
         if ((-sub_swidth <= vec_.x && vec_.x <= sub_swidth) && 
         	(-sub_sheight <= vec_.z && vec_.z <= sub_sheight)) {
-        	// Получить индекс карты высот наиболее соотвествующий переданным координатам. 
-	        var pos = conf.conv.pos(v);
+            /// Проекция мировой координаты в координаты карты высот.
+            v.x += sub_swidth;
+            v.z += sub_sheight;
+        	/// Получить индекс первого полигона в сегменте.
+	        var p = _conv.pos(v);
+            /// Найти проекцию заданной точки на полигон.
+            // for (var fi = p; fi < p + 4; ++fi) {
+            //     var face = _terrain_geometry.faces[fi];
+            // }
 	        // Сохранить высоту.
-        	v.y = _height_map[pos];
+        	v.y = (_conv.widthInSegments() * MAX_Y_BY_WIDTH_PERCENT) * _height_map[p.pos];
         }
         return v;
 	};
 
-    // Методы "гетеры"
+    /// Методы "гетеры"
     this.getHeightMap = function() {
         return _height_map;
     };
@@ -999,23 +1018,3 @@ MODELS.Terrain = function(conf) {
     };
 };
 MODELS.Terrain.prototype = Object.create(THREE.Group.prototype);
-
-
-/**
- * Тестовый объект сцены.
- * fill_color - Цвет заполнения полигона.
- * line_color - Цвет контурных линий.
- * size       - Размер объекта.
- */
-MODELS.TestObject = function(conf) {
-    var darkMaterial = new THREE.MeshBasicMaterial( { color: conf.fill_color } );
-    var wireframeMaterial = new THREE.MeshBasicMaterial( { color: conf.line_color, wireframe: true, transparent: true } );
-    var multiMaterial = [ 
-    	darkMaterial, 
-    	wireframeMaterial 
-    ];
-    var octagedron = new THREE.OctahedronGeometry(conf.size, 0);
-    var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
-    return shape;
-};
-MODELS.TestObject = Object.create(THREE.Group.prototype);
