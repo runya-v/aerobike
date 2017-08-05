@@ -144,7 +144,7 @@ CONTROLLERS.BikeController.prototype = Object.create(THREE.EventDispatcher.proto
  */
 CONTROLLERS.CameraController = function(camera_, bike_, terrain_, dom_element_) {
     var _scope = this;
-    var LOOK_DISTANCE = 10; ///< Дистанция до байка от камеры.
+    var LOOK_DISTANCE = 30; ///< Дистанция до байка от камеры.
     var HEIGHT_DISTANCE = 0.01; ///< Высота камеры над байком.
 
     /// Установка положения камеры за мотоциклом.
