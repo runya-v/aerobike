@@ -563,7 +563,7 @@ MODELS.Terrain = function(conf) {
             b = binom4(binom_conf);
             conf.height_map[i] = b;
         }
-        // Побавить пиксел текстуры трассы
+        // Добавить пиксел текстуры трассы
         var a = pos.sx / conf.conv.widthInSegments();
         var b = pos.sy / conf.conv.heightInSegments();
         conf.route_map.push(a);
@@ -581,7 +581,7 @@ MODELS.Terrain = function(conf) {
      * route_width  - Ширина трассы,
      */
     function generateRoute(conf) {
-        // Получить оптимизированные вершины для опорных точек трассы
+        /// Получить оптимизированные высоты для опорных точек трассы.
         var spiv_conf = {
             height_map: conf.height_map,
             route_width: conf.route_width,
@@ -643,7 +643,7 @@ MODELS.Terrain = function(conf) {
                     };
                     var v = {
                         x: binom4(x_binom_conf),
-                        y: binom4(y_binom_conf) + ROUTE_Y_BASE,
+                        y: binom4(y_binom_conf),
                         z: beg * conf.conv.segmentHeight()
                     };
                     route[beg] = v;
@@ -867,13 +867,29 @@ MODELS.Terrain = function(conf) {
     };
     var _route = generateRoute(route_conf);
 
+    var _max_y_koef = _conv.widthInSegments() * MAX_Y_BY_WIDTH_PERCENT;
+
+    // * Отрисовка опорных точек
+    var darkMaterial = new THREE.MeshBasicMaterial( { color: 0xff7733 } );
+    var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, transparent: true } );
+    var multiMaterial = [ darkMaterial, wireframeMaterial ];
+    for(var sp in _route.pivot_verts) {
+        var octagedron = new THREE.OctahedronGeometry(0.8, 0);
+        var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
+        var pos = _route.pivot_verts[sp];
+        shape.position.set(pos.x - _conv.width() * 0.5, pos.y * _max_y_koef, -pos.z + conf.height * 0.5);
+        _scope.add(shape);
+    }
+    // * __________________________________________________
+
+
     // Генерация сетки тирейна
     var grid_conf = {
         conv: _conv,
         pos_x: -conf.width * 0.5,
         pos_z: -conf.height * 0.5,
         height_map: _height_map,
-        max_y: _conv.widthInSegments() * MAX_Y_BY_WIDTH_PERCENT
+        max_y: _max_y_koef
     };
     var _terrain_geometry = new Grid(grid_conf);
     _terrain_geometry.computeFaceNormals();
@@ -936,6 +952,7 @@ MODELS.Terrain = function(conf) {
 
             // Загрузка шейдеров
             var terrain_material = new THREE.ShaderMaterial({
+                wireframe: true,
                 uniforms: custom_uniforms,
                 vertexShader: terrain_vert_sh,
                 fragmentShader: terrain_frag_sh
@@ -950,6 +967,8 @@ MODELS.Terrain = function(conf) {
             water.rotation.x = -Math.PI * 0.5;
             _scope.add(water);
 
+            // var mat_tir = new THREE.MeshBasicMaterial({ color:0x0035f10, wireframe: true, transparent: true });
+            // var mesh_tir = new THREE.Mesh(_terrain_geometry, mat_tir);
             var mesh_tir = new THREE.Mesh(_terrain_geometry, terrain_material);
             mesh_tir.receiveShadow  = true;
             _scope.add(mesh_tir);
@@ -995,7 +1014,7 @@ MODELS.Terrain = function(conf) {
             //     var face = _terrain_geometry.faces[fi];
             // }
 	        // Сохранить высоту.
-        	v.y = (_conv.widthInSegments() * MAX_Y_BY_WIDTH_PERCENT) * _height_map[p.pos];
+        	v.y = _height_map[p.pos] * (_conv.widthInSegments() * MAX_Y_BY_WIDTH_PERCENT);
         }
         return v;
 	};
