@@ -977,7 +977,7 @@ MODELS.Terrain = function(conf) {
 	 */
 	this.getVertexByPos = function(vec_) {
 		var v = {
-			x:vec_.x, y:0, z:vec_.z
+			x:vec_.x, y:0, z: -vec_.z
 		};
 		/// Получить смещение трассы относительно расположения трассы.
 		var sub_swidth = _conv.width() * 0.5;
