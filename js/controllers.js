@@ -83,7 +83,7 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
     }
 
     function updateSpeed(dt_) {
-        var ds = ((bike_.getMaxSpeed() * dt_ * 1000) / (bike_.getSpeedUp()));
+        var ds = ((bike_.getMaxSpeed() * dt_ * 5000) / (bike_.getSpeedUp()));
         if (_is_up_speed) {
             if (_speed < bike_.getMaxSpeed()) {
                 _speed += ds;
