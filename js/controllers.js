@@ -132,7 +132,7 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
 			/// Получить высоту в позиции.
 			var height_vec = terrain_.getVertexByPos(pos);
             /// Плавно откорректировать высоту.
-			bike_.position.y = height_vec.y;
+			bike_.position.y = height_vec.v.y;
         };
     };
 };
@@ -142,45 +142,25 @@ CONTROLLERS.BikeController.prototype = Object.create(THREE.EventDispatcher.proto
 /**
  * \brief  Контроллер камеры, относительно мотоцикла.
  */
-CONTROLLERS.CameraController = function(camera_, bike_, terrain_, dom_element_) {
+CONTROLLERS.BikeCameraController = function(camera_, bike_, terrain_, dom_element_) {
     var _scope = this;
-    var LOOK_DISTANCE = 30; ///< Дистанция до байка от камеры.
+    var LOOK_DISTANCE = 10; ///< Дистанция до байка от камеры.
     var HEIGHT_DISTANCE = 0.01; ///< Высота камеры над байком.
 
-    /// Установка положения камеры за мотоциклом.
-    var to_bike_direction = bike_.getWorldDirection();
-    to_bike_direction.negate().multiplyScalar(LOOK_DISTANCE);
-    to_bike_direction.y = HEIGHT_DISTANCE;
     var _old_bike_pos = bike_.position;
-    camera_.position.addVectors(bike_.position, to_bike_direction);
-    camera_.lookAt(bike_.position);
 
-    /// Инициализация орбитального контроллера камеры.
-    var _orbit_controls = new THREE.OrbitControls(camera_);
-    //_orbit_controls.target.set(bike_.position);
-    _orbit_controls.noKeys = true;
-    _orbit_controls.userPanSpeed = 100;
-    _orbit_controls.maxDistance = LOOK_DISTANCE;
+    /// Установка положения камеры за мотоциклом.
+    function lookToBike() {
+        var to_bike_direction = bike_.getWorldDirection();
+        to_bike_direction.negate().multiplyScalar(LOOK_DISTANCE);
+        to_bike_direction.y = HEIGHT_DISTANCE;
+        camera_.position.addVectors(bike_.position, to_bike_direction);
+        camera_.lookAt(bike_.position);
+    }
 
     this.update = function(dt_) {
         if (camera_ && bike_ && terrain_) {
-            var bike_position = bike_.position;
-            // var bike_direction = bike_.getWorldDirection();
-            // var to_bike_direction = bike_direction;
-            // /// Вычислить положение камеры за мотоциклом.
-            // to_bike_direction.negate().multiplyScalar(LOOK_DISTANCE);
-            // /// Поднять положение камеры над мотоциклом.
-            // to_bike_direction.y = HEIGHT_DISTANCE;
-            /// Переместить камеру в заданную точку и повернуть на мотоцикл.
-            //camera_.position.addVectors(to_bike_direction, bike_position);
-            //var pos_direction = new THREE.Vector3();
-            //pos_direction.subVectors(bike_position, _old_bike_pos);
-            //_orbit_controls.position0.add(pos_direction);
-            _orbit_controls.target = bike_position;
-            _orbit_controls.update(dt_);
-            _old_bike_pos = bike_position;
-            //camera_.lookAt(bike_position);
-            //camera_.position = bike_position;
+            lookToBike();
         }
     }
 };

@@ -18,8 +18,6 @@ void main() {
     float _d = (_rx + route_width * 10.0);
     vec4 _water = texture2D(ocean_texture, v_uv * 50.0) * (smoothstep(0.0, 0.007, f_amount) - smoothstep(0.001, 0.009, f_amount));
     vec4 _sandy = texture2D(sandy_texture, v_uv * 20.0) * (smoothstep(0.004, 0.010, f_amount) - smoothstep(0.006, 0.070, f_amount));
-    //vec4 _sandy = texture2D(sandy_texture, v_uv * 20.0) * (smoothstep(0.004, 0.009, f_amount) - smoothstep(0.006, 0.090, f_amount));
-    //vec4 _sandy = texture2D(sandy_texture, v_uv * 20.0) * (smoothstep(0.004, 0.009, f_amount) - smoothstep(0.006 + (a * 0.001), 0.070 + (a * 0.02), f_amount));
     vec4 _grass = texture2D(grass_texture, v_uv * 99.0) * (smoothstep(0.010, 0.070, f_amount) - smoothstep(0.050, 0.450, f_amount));
     vec4 _rocky = texture2D(rocky_texture, v_uv * 60.0) * (smoothstep(0.120, 0.450, f_amount) - smoothstep(0.400, 0.900, f_amount));
     vec4 _col = vec4(0.0, 0.0, 0.0, 1.0) + _water + _sandy + _grass + _rocky;
@@ -29,5 +27,5 @@ void main() {
     _route *= k;
     _col += _route;
     _col.a = smoothstep(0.0, 0.01, f_amount);
-    gl_FragColor = _col; //, 1.0);
+    gl_FragColor = _col;
 }
