@@ -967,8 +967,6 @@ MODELS.Terrain = function(conf) {
             water.rotation.x = -Math.PI * 0.5;
             _scope.add(water);
 
-            // var mat_tir = new THREE.MeshBasicMaterial({ color:0x0035f10, wireframe: true, transparent: true });
-            // var mesh_tir = new THREE.Mesh(_terrain_geometry, mat_tir);
             var mesh_tir = new THREE.Mesh(_terrain_geometry, terrain_material);
             mesh_tir.receiveShadow  = true;
             _scope.add(mesh_tir);
@@ -1001,6 +999,7 @@ MODELS.Terrain = function(conf) {
 		/// Получить смещение трассы относительно расположения трассы.
 		var sub_swidth = _conv.width() * 0.5;
         var sub_sheight = _conv.height() * 0.5;
+        var cross = new THREE.Vector3({ x:0, y:0, z:0 });
         // Проверить принадлежность точки площади трассы.
         if ((-sub_swidth <= vec_.x && vec_.x <= sub_swidth) && 
         	(-sub_sheight <= vec_.z && vec_.z <= sub_sheight)) {
@@ -1009,14 +1008,35 @@ MODELS.Terrain = function(conf) {
             v.z += sub_sheight;
         	/// Получить индекс первого полигона в сегменте.
 	        var p = _conv.pos(v);
-            /// Найти проекцию заданной точки на полигон.
-            // for (var fi = p; fi < p + 4; ++fi) {
-            //     var face = _terrain_geometry.faces[fi];
-            // }
-	        // Сохранить высоту.
+            /// Найти проекцию заданной точки на полигон, поиск производиться в горизонтальной плоскости XZ.
+            for (var fi = p * 4; fi < p * 4 + 4; ++fi) {
+                var face = _terrain_geometry.faces[fi];
+                var va = _terrain_geometry.vertices[face.a];
+                var vb = _terrain_geometry.vertices[face.b];
+                var vc = _terrain_geometry.vertices[face.c];
+                var arr = [
+                    { x:va.x, y:va.z },
+                    { x:vb.x, y:vb.z },
+                    { x:vc.x, y:vc.z }
+                ];
+                var point = { x:v.x, y:v.z };
+                /// Если точка в зоне полигона, найти проекцию точки на плоскость полигона и нормаль.
+                if (UTILS.Polygon.isBelong(arr, point)) {
+                    var vba = new THREE.Vector3({ x:vb.x - va.x, y:vb.y - va.y, z:vb.z - va.z });
+                    var vcb = new THREE.Vector3({ x:vc.x - vb.x, y:vc.y - vb.y, z:vc.z - vb.z });
+                    /// Получение нормали к плоскости полигона.
+                    cross.crossVectors(vba, vcb);
+                    cross.normalize();
+                    /// Получить расстояние от точки на нулевой высоте до пересечения с плоскостью полигона.
+                    /// d = (Ax + By + Cz + D) / sqrt(sqr(A) + sqr(B) + sqr(C)) | A = Nx; B = Ny; C = Nz
+                    /// Получить среднюю высоту точек полигона.
+                    v.y = (va.y + vb.y + vc.y) / 3;
+                }
+            }
+	        /// Сохранить высоту.
         	v.y = _height_map[p.pos] * (_conv.widthInSegments() * MAX_Y_BY_WIDTH_PERCENT);
         }
-        return v;
+        return {v:v, n:cross};
 	};
 
     /// Методы "гетеры"

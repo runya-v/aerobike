@@ -400,7 +400,7 @@ AEROBIKE.Game = function(renderer, on_return_game) {
     _group.add(_terrain);
     var _bike = new MODELS.BikePelican();
     _group.add(_bike);
-    var _bike_controller = new CONTROLLERS.BikeController(_bike, _terrain, _scope.camera, _scope.renderer.domElement);
+    var _bike_controller = new CONTROLLERS.BikeController(_bike, _terrain, _scope.renderer.domElement);
     _group.position.y = -5;
     _scope.scene.add(_group);
 
@@ -412,7 +412,7 @@ AEROBIKE.Game = function(renderer, on_return_game) {
     //_scope.scene.add(new THREE.AmbientLight(0xffffff));
     //_scope.scene.add(new THREE.SpotLight(0xffffff));
 
-    var _cam_controller = new CONTROLLERS.CameraController(_scope.camera, _bike, _terrain, _scope.renderer.domElement);
+    var _bike_cam_controller = new CONTROLLERS.BikeCameraController(_scope.camera, _bike, _terrain, _scope.renderer.domElement);
 
     var X_VIEW_PERCENT = 0.9;
     var Y_VIEW_PERCENT = 0.7;
@@ -479,7 +479,7 @@ AEROBIKE.Game = function(renderer, on_return_game) {
 
     this.update = function(dt_) {
         _bike_controller.update(dt_);
-        _cam_controller.update(dt_);
+        _bike_cam_controller.update(dt_);
     };
 
     this.hide = function() {

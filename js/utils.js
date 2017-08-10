@@ -254,6 +254,28 @@ UTILS.Easing = {
 };
 
 
+UTILS.Polygon = {
+    isBelong: function(poly_vertices_, point_) {
+        if (poly_vertices.constructor === Array) {
+            var c = 0;
+            var p = point_;
+            var len = poly_vertices_.length;
+            for (var i = 0, j = len - 1; i < len; j = i++) {
+                var va = poly_vertices[i];
+                var vb = poly_vertices[j];
+                if (((va.y < vb.y) && (va.y <= y) && (y <= vb.y) &&
+                     ((vb.y - va.y) * (x - va.x) > (vb.x - va.x) * (y - va.y))) || (
+                     (va.y > vb.y) && (vb.y <= y) && (y <= va.y) &&
+                     ((vb.y - va.y) * (x - va.x) < (vb.x - va.x) * (y - va.y)))) {
+                    c = !c;
+                }
+            }
+        }
+        return c;
+    }
+};
+
+
 UTILS.TextureLoader = function() {
     THREE.ImageLoader.call(this);
     var _scope = this;
