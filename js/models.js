@@ -869,18 +869,18 @@ MODELS.Terrain = function(conf) {
 
     var _max_y_koef = _conv.widthInSegments() * MAX_Y_BY_WIDTH_PERCENT;
 
-    // * Отрисовка опорных точек
-    var darkMaterial = new THREE.MeshBasicMaterial( { color: 0xff7733 } );
-    var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, transparent: true } );
-    var multiMaterial = [ darkMaterial, wireframeMaterial ];
-    for(var sp in _route.pivot_verts) {
-        var octagedron = new THREE.OctahedronGeometry(0.8, 0);
-        var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
-        var pos = _route.pivot_verts[sp];
-        shape.position.set(pos.x - _conv.width() * 0.5, pos.y * _max_y_koef, -pos.z + conf.height * 0.5);
-        _scope.add(shape);
-    }
-    // * __________________________________________________
+    // // * Отрисовка опорных точек
+    // var darkMaterial = new THREE.MeshBasicMaterial( { color: 0xff7733 } );
+    // var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, transparent: true } );
+    // var multiMaterial = [ darkMaterial, wireframeMaterial ];
+    // for(var sp in _route.pivot_verts) {
+    //     var octagedron = new THREE.OctahedronGeometry(0.8, 0);
+    //     var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
+    //     var pos = _route.pivot_verts[sp];
+    //     shape.position.set(pos.x - _conv.width() * 0.5, pos.y * _max_y_koef, -pos.z + conf.height * 0.5);
+    //     _scope.add(shape);
+    // }
+    // // * __________________________________________________
 
 
     // Генерация сетки тирейна
@@ -952,7 +952,7 @@ MODELS.Terrain = function(conf) {
 
             // Загрузка шейдеров
             var terrain_material = new THREE.ShaderMaterial({
-                wireframe: true,
+                //wireframe: true,
                 uniforms: custom_uniforms,
                 vertexShader: terrain_vert_sh,
                 fragmentShader: terrain_frag_sh
