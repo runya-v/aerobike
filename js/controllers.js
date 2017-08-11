@@ -147,15 +147,27 @@ CONTROLLERS.BikeCameraController = function(camera_, bike_, terrain_, dom_elemen
     var LOOK_DISTANCE = 10; ///< Дистанция до байка от камеры.
     var HEIGHT_DISTANCE = 0.01; ///< Высота камеры над байком.
 
-    var _old_bike_pos = bike_.position;
+    var _old_bike_pos = bike_.position.clone();
 
     /// Установка положения камеры за мотоциклом.
+    var to_bike_direction = bike_.getWorldDirection();
+    to_bike_direction.negate().multiplyScalar(LOOK_DISTANCE);
+    to_bike_direction.y = HEIGHT_DISTANCE;
+    camera_.position.addVectors(bike_.position, to_bike_direction);
+    camera_.position.x = 5;
+    camera_.lookAt(bike_.position);
+
     function lookToBike() {
-        var to_bike_direction = bike_.getWorldDirection();
-        to_bike_direction.negate().multiplyScalar(LOOK_DISTANCE);
-        to_bike_direction.y = HEIGHT_DISTANCE;
-        camera_.position.addVectors(bike_.position, to_bike_direction);
-        camera_.lookAt(bike_.position);
+        if (bike_.position !== _old_bike_pos) {
+            /// Получить вектор смещения байка.
+            var s = new THREE.Vector3();
+            s.subVectors(bike_.position, _old_bike_pos);
+            /// Добавить вектор смещения байка к текущей позиции камеры.
+            camera_.position.add(s);
+            camera_.lookAt(bike_.position);
+            /// Запомнить текущее положение байка.
+            _old_bike_pos = bike_.position.clone();
+        }
     }
 
     this.update = function(dt_) {
