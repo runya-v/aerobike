@@ -80,6 +80,9 @@
                         dae.traverse(function(child) {
                             if( child.material) {
                                 child.material.transparent = true;
+                                child.material.premultipliedAlpha = true;
+                                child.material.needsUpdate = true;
+                                child.material.alphaTest = 0.05;
 						        child.material.side = THREE.DoubleSide;
                             }
                             if (child instanceof THREE.SkinnedMesh) {
@@ -107,7 +110,7 @@
 
     function main() {
         renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
-        renderer.setClearColor(0xFFA500);
+        renderer.setClearColor(0xA5A5A5);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.gammaInput = true;
@@ -118,7 +121,9 @@
         scene_container.appendChild(renderer.domElement);
 
         camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000);
-        camera.position.z = 4;
+        camera.position.x = 3;
+//        camera.position.y = 3;
+//        camera.position.z = 4;
         controls = new THREE.OrbitControls(camera, renderer.domElement);
 
         scene = new THREE.Scene();
