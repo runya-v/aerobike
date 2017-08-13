@@ -144,10 +144,17 @@ CONTROLLERS.BikeController.prototype = Object.create(THREE.EventDispatcher.proto
  */
 CONTROLLERS.BikeCameraController = function(camera_, bike_, terrain_, dom_element_) {
     var _scope = this;
-    var LOOK_DISTANCE = 10; ///< Дистанция до байка от камеры.
-    var HEIGHT_DISTANCE = 0.01; ///< Высота камеры над байком.
+    var LOOK_DISTANCE = 10; ///< Константа - дистанция до байка от камеры.
+    var HEIGHT_DISTANCE = 0.01; ///< Константа - высота камеры над байком.
+    var ZOOM_SPEED = 1.0; ///< Константа - скорость цума.
 
-    var _old_bike_pos = bike_.position.clone();
+    var _cam_dist = LOOK_DISTANCE; ///< Дистанция до байка от камеры
+
+    var _old_bike_pos = new THREE.Vector3();
+
+    if (bike_) {
+        _old_bike_pos = bike_.position.clone();
+    }
 
     /// Установка положения камеры за мотоциклом.
     var to_bike_direction = bike_.getWorldDirection();
@@ -167,6 +174,27 @@ CONTROLLERS.BikeCameraController = function(camera_, bike_, terrain_, dom_elemen
             camera_.lookAt(bike_.position);
             /// Запомнить текущее положение байка.
             _old_bike_pos = bike_.position.clone();
+        }
+    }
+
+    function updateDistance() {
+
+
+    }
+
+    function dollyOut(dollyScale) {
+        if (scope.object instanceof THREE.PerspectiveCamera) {
+            scale *= dollyScale;
+        } else {
+            console.warn('WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.');
+        }
+    }
+
+    function onMouseWheel(event) {
+        if (event.deltaY < 0) {
+            scale *= Math.pow(0.95, ZOOM_SPEED);
+        } else if (event.deltaY > 0) {
+            scale /= Math.pow(0.95, ZOOM_SPEED);
         }
     }
 
