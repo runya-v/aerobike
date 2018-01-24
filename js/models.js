@@ -14,7 +14,7 @@ MODELS.BikePelican = function() {
 
     var DGRAD = 5;
     var FLOUTIN_DISTANCE_PERCENT = 0.001;
-    var MAX_SPEED = 0.6; ///< Метра в секунду. ~= 110 км/ч
+    var MAX_SPEED = 0.2; // 0.6 ///< Метра в секунду. ~= 110 км/ч
     var SPEEDUP = 6; ///< Разгон до предельной скорости.
 
     var _scope = this;
@@ -46,11 +46,11 @@ MODELS.BikePelican = function() {
 
     this.getMaxSpeed = function() {
         return MAX_SPEED;
-    }
+    };
 
     this.getSpeedUp = function() {
         return SPEEDUP;
-    }
+    };
 };
 MODELS.BikePelican.prototype = Object.create(THREE.Group.prototype);
 

@@ -17,8 +17,8 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
     var EPS = 0.000001;
     var PIXELS_PER_ROUND = 1800;
     var ROTATE_ANGLE = 2;
-    var SPEED_UP = 2;
-    var SPEED_DOWN = 2;
+    var SPEED_UP = 1;
+    var SPEED_DOWN = 1;
     var HEIGHT = 0;
 
     _scope.keys = {
@@ -48,7 +48,7 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
     var _last_position = new THREE.Vector3();
     var _direction = new THREE.Vector3();
 
-    function updateRotation() {
+    function updateRotation(dt_) {
         if (_is_rotate) {
             var rot_matrix = new THREE.Matrix4();
             var axis = new THREE.Vector3(0, 1, 0);
@@ -95,6 +95,8 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
         }
     }
 
+    var tmp_bdir = {};
+
     function updateSpeed(dt_) {
         var ds = ((bike_.getMaxSpeed() * dt_ * 5000) / (bike_.getSpeedUp()));
         if (_is_up_speed) {
@@ -123,12 +125,25 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
                 _speed = 0;
             }
         }
+        /// Плавное нарастание скорости по функции.
         var su = UTILS.Easing.inOutCubic(_speed);
         /// Получить вектор направления байка
-        var bike_direction = bike_.getWorldDirection();
+        var bike_direction = bike_.getWorldDirection().clone();
+        bike_direction.normalize();
+        bike_direction.multiplyScalar(su);
         /// Сместить байк на значение скорости
-        bike_.translateOnAxis(bike_direction, su);
+        bike_.position.x += bike_direction.x;
+        bike_.position.z += bike_direction.z;
     }
+
+    function updateHeight(dt_) {
+            /// Получить текущую позицию.
+            var pos = bike_.position;
+            /// Получить высоту в позиции.
+            var height_vec = terrain_.getVertexByPos(pos);
+            /// Плавно откорректировать высоту.
+            bike_.position.y = height_vec.v.y;
+    } 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     this.update = function(dt_) {
@@ -136,13 +151,9 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
             /// Обновить скорость перемещения.
             updateSpeed(dt_);
             /// Обновить направление байка.
-            updateRotation();
-			/// Получить текущую позицию.
-			var pos = bike_.position;
-			/// Получить высоту в позиции.
-			var height_vec = terrain_.getVertexByPos(pos);
-            /// Плавно откорректировать высоту.
-			bike_.position.y = height_vec.v.y;
+            updateRotation(dt_);
+            /// Обновить положение байка над поверхностью.
+            updateHeight(dt_);
         };
     };
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
