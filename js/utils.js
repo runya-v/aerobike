@@ -194,7 +194,7 @@ UTILS.ModelLoader = function() {
 
     this.getModel = function() {
         return _model;
-    }
+    };
 };
 
 
@@ -274,6 +274,21 @@ UTILS.Polygon = {
         return c;
     }
 };
+
+
+UTILS.Line = function(color_, from_, to_) {
+    THREE.Group.call(this);
+    var material = new THREE.LineBasicMaterial({ 
+        color: color_ 
+    });
+    var geometry = new THREE.Geometry();
+    geometry.vertices.push(
+        new THREE.Vector3(from_.x, from_.y, from_.z),
+        new THREE.Vector3(to_.x, to_.y, to_.z)
+    );
+    this.add(new THREE.Line(geometry, material));
+};
+UTILS.Line.prototype = Object.create(THREE.Group.prototype);
 
 
 UTILS.TextureLoader = function() {
