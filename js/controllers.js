@@ -38,6 +38,7 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
     _scope.minDistance = 0;
     _scope.maxDistance = Infinity;
 
+    var _middle_dt = 0;
     var _speed = 0;
     var _is_up_speed = false;
     var _is_down_speed = false;
@@ -94,39 +95,40 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
                 break;
         }
     }
-
-    var tmp_bdir = {};
-
+var ospeed = 0;
     function updateSpeed(dt_) {
-        var ds = ((bike_.getMaxSpeed() * dt_ * 5000) / (bike_.getSpeedUp()));
+        if (!_middle_dt) {
+            _middle_dt = dt_;
+        } else {
+            _middle_dt = (_middle_dt + dt_) * 0.5;
+        }
+        var max_speed = bike_.MAX_SPEED * 1000 * _middle_dt; 
+        var us = max_speed / bike_.SPEED_UP;
+        var bs = max_speed / bike_.BREAKING;
+        var ds = max_speed / bike_.SPEED_DOWN;
         if (_is_up_speed) {
-            if (_speed < bike_.getMaxSpeed()) {
-                _speed += ds;
+            if ((_speed + us) <= max_speed) {
+                _speed += us;
             } else {
-                _speed = bike_.getMaxSpeed();
+                _speed = max_speed;
+                console.log('>' + max_speed + '!');
             }
-        } else if (! _is_down_speed) {
-            if (0 < _speed) {
+        } else if (_is_down_speed) {
+            if (0 <= (_speed - bs)) {
+                _speed -= bs;
+            } else {
+                _speed = 0;
+            }
+        } else {
+            if (0 <= (_speed - ds)) {
                 _speed -= ds;
             } else {
                 _speed = 0;
             }
         }
-        if (_is_down_speed) {
-            if (-bike_.getMaxSpeed() < _speed) {
-                _speed -= ds;
-            } else {
-                _speed = -bike_.getMaxSpeed();
-            }
-        } else if (! _is_up_speed) {
-            if (_speed < 0) {
-                _speed += ds;
-            } else {
-                _speed = 0;
-            }
-        }
+        
         /// Плавное нарастание скорости по функции.
-        var su = UTILS.Easing.inOutCubic(_speed);
+        var su = _speed; //UTILS.Easing.inOutCubic(_speed);
         /// Получить вектор направления байка
         var bike_direction = bike_.getWorldDirection().clone();
         bike_direction.normalize();
@@ -134,15 +136,27 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
         /// Сместить байк на значение скорости
         bike_.position.x += bike_direction.x;
         bike_.position.z += bike_direction.z;
+        if (ospeed !== _speed) {
+            console.log('> ' + dt_ + ' | ' + _speed + ' | ' + JSON.stringify(bike_direction));
+            ospeed = _speed;
+        }
     }
 
     function updateHeight(dt_) {
-            /// Получить текущую позицию.
-            var pos = bike_.position;
-            /// Получить высоту в позиции.
-            var height_vec = terrain_.getVertexByPos(pos);
-            /// Плавно откорректировать высоту.
-            bike_.position.y = height_vec.v.y;
+        bike_.timer += dt_;
+        /// Получить текущую позицию.
+        var pos = bike_.position;
+        /// Получить высоту в позиции.
+        var height_vec = terrain_.getVertexByPos(pos);
+        bike_.cur_wirld_height = height_vec.v.y;
+        var hover = UTILS.Periodics.sinus(bike_.timer * 1000,  bike_.HOVER_FREQUENCE) * bike_.HOVER_AMPLITUDE + bike_.HOVER_DISTANCE;
+        console.log('>' + bike_.timer + ', ' + (bike_.HOVER_FREQUENCE * dt_) + ', ' + hover);
+        /// Плавно откорректировать высоту.
+        if (0 <= height_vec.v.y) {
+            bike_.position.y = bike_.cur_wirld_height + hover;
+        } else {
+            bike_.position.y = hover;
+        }
     } 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -160,8 +174,6 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
 
     document.addEventListener("keydown", onDocumentKeyDown, false);
     document.addEventListener("keyup", onDocumentKeyUp, false);
-    //window.addEventListener('keydown', onKeyDown, false);
-    //window.addEventListener('keyup', onKeyUp, false);
 };
 CONTROLLERS.BikeController.prototype = Object.create(THREE.EventDispatcher.prototype);
 
@@ -178,18 +190,18 @@ CONTROLLERS.BikeCameraController = function(camera_, bike_, terrain_, dom_elemen
     var LOOK_DISTANCE = 9; ///< Константа - дистанция от камеры до байка.
 
     var _old_bike_pos = new THREE.Vector3();
-
     if (bike_) {
-        _old_bike_pos = bike_.position.clone();
+        _old_bike_pos = new THREE.Vector3(bike_.position.x, bike_.cur_wirld_height, bike_.position.z);
     }
+    var _bike_position = {};
 
     /// Установка положения камеры за мотоциклом.
     var to_bike_direction = bike_.getWorldDirection();
     to_bike_direction.negate().multiplyScalar(LOOK_DISTANCE);
     to_bike_direction.y = HEIGHT_DISTANCE;
-    camera_.position.addVectors(bike_.position, to_bike_direction);
-    //camera_.position.x = 5;
-    camera_.lookAt(bike_.position);
+    _bike_position = new THREE.Vector3(bike_.position.x, bike_.cur_wirld_height, bike_.position.z);
+    camera_.position.addVectors(_bike_position, to_bike_direction);
+    camera_.lookAt(_bike_position);
 
     function getDirection(va_, vb_) {
         var vd = new THREE.Vector3();
@@ -198,12 +210,13 @@ CONTROLLERS.BikeCameraController = function(camera_, bike_, terrain_, dom_elemen
     }
 
     function lookToBike() {
-        if (bike_.position !== _old_bike_pos) {
+        _bike_position = new THREE.Vector3(bike_.position.x, bike_.cur_wirld_height, bike_.position.z);
+        if (!_bike_position.equals(_old_bike_pos)) {
             /// Добавить вектор смещения байка к текущей позиции камеры.
-            camera_.position.add(getDirection(_old_bike_pos, bike_.position));
-            camera_.lookAt(bike_.position);
+            camera_.position.add(getDirection(_old_bike_pos, _bike_position));
+            camera_.lookAt(_bike_position);
             /// Запомнить текущее положение байка.
-            _old_bike_pos = bike_.position.clone();
+            _old_bike_pos = _bike_position.clone();
         }
     }
 

@@ -254,6 +254,21 @@ UTILS.Easing = {
 };
 
 
+
+UTILS.Periodics = {
+    /**
+     * \brief Синусоидальная периодическая функция.
+     * \param t Значения от 0 до 1. 
+     * \param f Частота перидических повторений для t. 
+     * \return Вычисленные значения в диапазоне - 1 до 1. 
+     */ 
+    sinus: function(t, f) {
+        var rad360 = Math.PI * 2;
+        return Math.sin(rad360 * t * f);
+    } 
+};
+
+
 UTILS.Polygon = {
     isBelong: function(poly_vertices_, point_) {
         if (poly_vertices.constructor === Array) {
