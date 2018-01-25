@@ -12,10 +12,18 @@ MODELS.Pilot = function() {};
 MODELS.BikePelican = function() {
     THREE.Group.call(this);
 
-    var DGRAD = 5;
-    var FLOUTIN_DISTANCE_PERCENT = 0.001;
-    var MAX_SPEED = 0.2; // 0.6 ///< Метра в секунду. ~= 110 км/ч
-    var SPEEDUP = 6; ///< Разгон до предельной скорости.
+    this.DGRAD = 5;
+    this.FLOUTIN_DISTANCE_PERCENT = 0.5;
+    this.MAX_SPEED = 60; ///< Метра в секунду. ~= 200 км/ч
+    this.SPEED_UP = 10; ///< Разгон до предельной скорости в секундах.
+    this.SPEED_DOWN = 50; ///< Замедление в секундах.
+    this.BREAKING = 5; ///< Торможение в секундах.
+    this.HOVER_DISTANCE = 1.2; ///< Высота парения над поверхностью.
+    this.HOVER_AMPLITUDE = 0.1; ///< Амплитуда парения над поверхностью.
+    this.HOVER_FREQUENCE = 1.6; ///< Амплитуда парения над поверхностью.
+    
+    this.timer = 0;
+    this.cur_wirld_height = this.HOVER_DISTANCE;
 
     var _scope = this;
     var _animation;
@@ -36,21 +44,13 @@ MODELS.BikePelican = function() {
         }, file_name_);
     }
 
-    this.update = function(dclock) {
-        if (_alpha > 360) {
-            _alpha = 0;
-        }
-        _scope.position.y += Math.sin(_alpha * (Math.PI / 180.0)) * FLOUTIN_DISTANCE_PERCENT;
-        _alpha += dclock * 200;
-    };
-
-    this.getMaxSpeed = function() {
-        return MAX_SPEED;
-    };
-
-    this.getSpeedUp = function() {
-        return SPEEDUP;
-    };
+    // this.update = function(dclock) {
+        // if (_alpha > 360) {
+            // _alpha = 0;
+        // }
+        // _scope.position.y += Math.sin(_alpha * (Math.PI / 180.0)) * _scope.FLOUTIN_DISTANCE_PERCENT;
+        // _alpha += dclock * 200;
+    // };
 };
 MODELS.BikePelican.prototype = Object.create(THREE.Group.prototype);
 
@@ -133,7 +133,7 @@ MODELS.Terrain = function(conf) {
     var MIN_ROUTE_PIVOUT_COUNT = 5;  ///< Минимальное число поворотов трассы.
     var MAX_ROUTE_PIVOUT_COUNT = 20; ///< Максимальное число поворотов трассы.
     var ROUTE_Y_BASE = 0.02;
-    var HEIGHT_SCALE = 60.0;
+    var HEIGHT_SCALE = 55.0;
     var MAX_Y_BY_WIDTH_PERCENT = 0.33; ///< Процент процент от ширины тирейна для определения максимальной высоты.
 
 
@@ -976,7 +976,7 @@ MODELS.Terrain = function(conf) {
         sandy_texture = texture_loader.load('textures/sand-512.jpg');
         grass_texture = texture_loader.load('textures/grass-512.jpg');
         rocky_texture = texture_loader.load('textures/rock-512.jpg');
-        water_tex = texture_loader.load('textures/water512.jpg');
+        water_tex = texture_loader.load('textures/water-512.jpg');
     });
     var file_loader = new THREE.FileLoader(sh_loading_manager);
     file_loader.load('shaders/Terrain.vert', function(data) {

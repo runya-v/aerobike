@@ -392,13 +392,14 @@ AEROBIKE.Game = function(renderer, on_return_game) {
         hills_num: 1000,
         route_width: 6,
         width: 80,
-        height: 400,
+        height: 500,
         segments_width: 320,
-        segments_height: 1600
+        segments_height: 2000
     };
     var _terrain = new MODELS.Terrain(_tir_conf);
     _group.add(_terrain);
     var _bike = new MODELS.BikePelican();
+    _bike.position.z = -(_tir_conf.height * 0.5);
     _group.add(_bike);
     var _bike_controller = new CONTROLLERS.BikeController(_bike, _terrain, _scope.renderer.domElement);
     _group.position.y = -5;
