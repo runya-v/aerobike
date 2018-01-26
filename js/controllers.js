@@ -99,7 +99,9 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
         /// Получить максиамльную скорость для промежутка времени с приведением к секунде.
         var max_speed = bike_.MAX_SPEED * dt_ * 1000;
         /// Коррекция максимальной скорости на промежутке времени.
-        _mspeed = (_mspeed + max_speed) * 0.5;   
+        if (_mspeed < max_speed) {
+            _mspeed = max_speed;   
+        }
         /// Получить приращения скорости. 
         var us = _mspeed / bike_.SPEED_UP;
         var bs = _mspeed / bike_.BREAKING;
@@ -110,21 +112,23 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
             } else {
                 bike_.speed = _mspeed;
             }
+            console.log('>' + bike_.speed);
         } else if (_is_down_speed) {
             if (0 <= (bike_.speed - bs)) {
                 bike_.speed -= bs;
             } else {
                 bike_.speed = 0;
             }
+            console.log('>' + bike_.speed);
         } else {
             if (0 <= (bike_.speed - ds)) {
                 bike_.speed -= ds;
             } else {
                 bike_.speed = 0;
             }
+            _mspeed = 0;
+            console.log('>' + bike_.speed);
         }
-        /// Плавное нарастание скорости по функции.
-        //var s = UTILS.Easing.inOutCubic(bike_.speed);
         /// Получить вектор направления байка
         var bike_direction = bike_.getWorldDirection().clone();
         bike_direction.normalize();
