@@ -39,12 +39,11 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
     _scope.maxDistance = Infinity;
 
     var _middle_dt = 0;
-    var _speed = 0;
+    var _mspeed = 0;
     var _is_up_speed = false;
     var _is_down_speed = false;
 
     var _is_rotate = false;
-    var _cur_rotate_angle = 0;
 
     var _last_position = new THREE.Vector3();
     var _direction = new THREE.Vector3();
@@ -53,7 +52,7 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
         if (_is_rotate) {
             var rot_matrix = new THREE.Matrix4();
             var axis = new THREE.Vector3(0, 1, 0);
-            var radians = _cur_rotate_angle * Math.PI / 180;
+            var radians = bike_.rotate_angle * Math.PI / 180;
             rot_matrix.makeRotationAxis(axis.normalize(), radians);
             bike_.matrix.multiply(rot_matrix);
             bike_.rotation.setFromRotationMatrix(bike_.matrix);
@@ -64,11 +63,11 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
         switch (event.keyCode) {
             case _scope.keys.LEFT:
                 _is_rotate = true;
-                _cur_rotate_angle = ROTATE_ANGLE; 
+                bike_.rotate_angle = ROTATE_ANGLE; 
                 break;
             case _scope.keys.RIGHT:
                 _is_rotate = true;
-                _cur_rotate_angle = -ROTATE_ANGLE; 
+                bike_.rotate_angle = -ROTATE_ANGLE; 
                 break;
             case _scope.keys.UP:
                 _is_up_speed = true;
@@ -95,51 +94,44 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
                 break;
         }
     }
-var ospeed = 0;
+
     function updateSpeed(dt_) {
-        if (!_middle_dt) {
-            _middle_dt = dt_;
-        } else {
-            _middle_dt = (_middle_dt + dt_) * 0.5;
-        }
-        var max_speed = bike_.MAX_SPEED * 1000 * _middle_dt; 
-        var us = max_speed / bike_.SPEED_UP;
-        var bs = max_speed / bike_.BREAKING;
-        var ds = max_speed / bike_.SPEED_DOWN;
+        /// Получить максиамльную скорость для промежутка времени с приведением к секунде.
+        var max_speed = bike_.MAX_SPEED * dt_ * 1000;
+        /// Коррекция максимальной скорости на промежутке времени.
+        _mspeed = (_mspeed + max_speed) * 0.5;   
+        /// Получить приращения скорости. 
+        var us = _mspeed / bike_.SPEED_UP;
+        var bs = _mspeed / bike_.BREAKING;
+        var ds = _mspeed / bike_.SPEED_DOWN;
         if (_is_up_speed) {
-            if ((_speed + us) <= max_speed) {
-                _speed += us;
+            if ((bike_.speed + us) <= _mspeed) {
+                bike_.speed += us;
             } else {
-                _speed = max_speed;
-                console.log('>' + max_speed + '!');
+                bike_.speed = _mspeed;
             }
         } else if (_is_down_speed) {
-            if (0 <= (_speed - bs)) {
-                _speed -= bs;
+            if (0 <= (bike_.speed - bs)) {
+                bike_.speed -= bs;
             } else {
-                _speed = 0;
+                bike_.speed = 0;
             }
         } else {
-            if (0 <= (_speed - ds)) {
-                _speed -= ds;
+            if (0 <= (bike_.speed - ds)) {
+                bike_.speed -= ds;
             } else {
-                _speed = 0;
+                bike_.speed = 0;
             }
         }
-        
         /// Плавное нарастание скорости по функции.
-        var su = _speed; //UTILS.Easing.inOutCubic(_speed);
+        //var s = UTILS.Easing.inOutCubic(bike_.speed);
         /// Получить вектор направления байка
         var bike_direction = bike_.getWorldDirection().clone();
         bike_direction.normalize();
-        bike_direction.multiplyScalar(su);
+        bike_direction.multiplyScalar(bike_.speed);
         /// Сместить байк на значение скорости
         bike_.position.x += bike_direction.x;
         bike_.position.z += bike_direction.z;
-        if (ospeed !== _speed) {
-            console.log('> ' + dt_ + ' | ' + _speed + ' | ' + JSON.stringify(bike_direction));
-            ospeed = _speed;
-        }
     }
 
     function updateHeight(dt_) {
@@ -148,12 +140,11 @@ var ospeed = 0;
         var pos = bike_.position;
         /// Получить высоту в позиции.
         var height_vec = terrain_.getVertexByPos(pos);
-        bike_.cur_wirld_height = height_vec.v.y;
+        bike_.cur_world_height = height_vec.v.y;
         var hover = UTILS.Periodics.sinus(bike_.timer * 1000,  bike_.HOVER_FREQUENCE) * bike_.HOVER_AMPLITUDE + bike_.HOVER_DISTANCE;
-        console.log('>' + bike_.timer + ', ' + (bike_.HOVER_FREQUENCE * dt_) + ', ' + hover);
         /// Плавно откорректировать высоту.
         if (0 <= height_vec.v.y) {
-            bike_.position.y = bike_.cur_wirld_height + hover;
+            bike_.position.y = bike_.cur_world_height + hover;
         } else {
             bike_.position.y = hover;
         }
@@ -161,13 +152,14 @@ var ospeed = 0;
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     this.update = function(dt_) {
+        _middle_dt = (_middle_dt + dt_) * 0.5;
         if (bike_ && terrain_) {
             /// Обновить скорость перемещения.
-            updateSpeed(dt_);
+            updateSpeed(_middle_dt);
             /// Обновить направление байка.
-            updateRotation(dt_);
+            updateRotation(_middle_dt);
             /// Обновить положение байка над поверхностью.
-            updateHeight(dt_);
+            updateHeight(_middle_dt);
         };
     };
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -182,51 +174,60 @@ CONTROLLERS.BikeController.prototype = Object.create(THREE.EventDispatcher.proto
  * \brief  Контроллер камеры, относительно мотоцикла.
  */
 CONTROLLERS.BikeCameraController = function(camera_, bike_, terrain_, dom_element_) {
-    var _scope = this;
     var MIN_LOOK_DISTANCE = 30; ///< Константа - минимальная дистанция до байка от камеры.
     var MAX_LOOK_DISTANCE = 50; ///< Константа - максимальная дистанция до байка от камеры.
     var HEIGHT_DISTANCE = 1; ///< Константа - высота камеры над байком.
     var ZOOM_SPEED = 1.0; ///< Константа - скорость зума.
     var LOOK_DISTANCE = 9; ///< Константа - дистанция от камеры до байка.
+    
+    var _scope = this;
+    var _angle = Math.PI * -0.5;
 
-    var _old_bike_pos = new THREE.Vector3();
-    if (bike_) {
-        _old_bike_pos = new THREE.Vector3(bike_.position.x, bike_.cur_wirld_height, bike_.position.z);
-    }
-    var _bike_position = {};
+    var _old_bike_pos = new THREE.Vector3(bike_.position.x, bike_.cur_world_height, bike_.position.z);
+    var _old_bike_direction = new THREE.Vector3();
+    var _subv = new THREE.Vector3();
 
     /// Установка положения камеры за мотоциклом.
     var to_bike_direction = bike_.getWorldDirection();
+    _old_bike_direction = to_bike_direction.clone();
     to_bike_direction.negate().multiplyScalar(LOOK_DISTANCE);
     to_bike_direction.y = HEIGHT_DISTANCE;
-    _bike_position = new THREE.Vector3(bike_.position.x, bike_.cur_wirld_height, bike_.position.z);
+    var _bike_position = new THREE.Vector3(bike_.position.x, bike_.cur_world_height, bike_.position.z);
     camera_.position.addVectors(_bike_position, to_bike_direction);
     camera_.lookAt(_bike_position);
 
-    function getDirection(va_, vb_) {
-        var vd = new THREE.Vector3();
-        vd.subVectors(vb_, va_);
-        return vd;
-    }
-
     function lookToBike() {
-        _bike_position = new THREE.Vector3(bike_.position.x, bike_.cur_wirld_height, bike_.position.z);
-        if (!_bike_position.equals(_old_bike_pos)) {
+        /// Вращение камеры за байкаом.
+        var bike_direction = bike_.getWorldDirection().clone();
+        bike_direction.y = 0;
+        var cam_direction = camera_.getWorldDirection().clone();
+        cam_direction.y = 0;
+        _bike_position.x = bike_.position.x;
+        _bike_position.y = bike_.cur_world_height;
+        _bike_position.z = bike_.position.z;
+        var angle = cam_direction.angleTo(bike_direction) / Math.PI;
+        if (0.001 < angle) {
+            _subv.subVectors(_bike_position, camera_.position);
+            var eas = UTILS.Easing.inOutCubic(angle);
+            _angle += (bike_.rotate_angle < 0) ? eas : -eas;
+            _subv.x += Math.cos(_angle) * LOOK_DISTANCE;
+            _subv.z += Math.sin(_angle) * LOOK_DISTANCE;
+            camera_.position.add(_subv);
+            _old_bike_direction = bike_direction.clone();
+        }
+        /// Смещение камеры вместе с байком.
+        if (!_bike_position.equals(_old_bike_pos) || 0.001 < angle) {
             /// Добавить вектор смещения байка к текущей позиции камеры.
-            camera_.position.add(getDirection(_old_bike_pos, _bike_position));
+            _subv.subVectors(_bike_position, _old_bike_pos);
+            camera_.position.add(_subv);
             camera_.lookAt(_bike_position);
             /// Запомнить текущее положение байка.
             _old_bike_pos = _bike_position.clone();
         }
     }
 
-    function updateDistance() {
-
-
-    }
-
     function onMouseWheel(event) {
-        var d = getDirection(camera_.position, bike_.position);
+        var d = getDirection(camera_.position, _bike_position);
         var cam_dist = d.length();
         var scale = 1;
         if (event.deltaY < 0) {

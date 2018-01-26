@@ -390,7 +390,7 @@ AEROBIKE.Game = function(renderer, on_return_game) {
     var _group = new THREE.Group();
     var _tir_conf = {
         hills_num: 1000,
-        route_width: 6,
+        route_width: 8,
         width: 80,
         height: 500,
         segments_width: 320,
