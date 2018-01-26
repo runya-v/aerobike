@@ -14,16 +14,18 @@ MODELS.BikePelican = function() {
 
     this.DGRAD = 5;
     this.FLOUTIN_DISTANCE_PERCENT = 0.5;
-    this.MAX_SPEED = 60; ///< Метра в секунду. ~= 200 км/ч
+    this.MAX_SPEED = 50; ///< Метра в секунду. ~ 180 км/ч
     this.SPEED_UP = 10; ///< Разгон до предельной скорости в секундах.
-    this.SPEED_DOWN = 50; ///< Замедление в секундах.
-    this.BREAKING = 5; ///< Торможение в секундах.
+    this.SPEED_DOWN = 100; ///< Замедление в секундах.
+    this.BREAKING = 8; ///< Торможение в секундах.
     this.HOVER_DISTANCE = 1.2; ///< Высота парения над поверхностью.
-    this.HOVER_AMPLITUDE = 0.1; ///< Амплитуда парения над поверхностью.
-    this.HOVER_FREQUENCE = 1.6; ///< Амплитуда парения над поверхностью.
+    this.HOVER_AMPLITUDE = 0.04; ///< Амплитуда парения над поверхностью.
+    this.HOVER_FREQUENCE = 1.5; ///< Периодичность парения над поверхностью.
     
     this.timer = 0;
-    this.cur_wirld_height = this.HOVER_DISTANCE;
+    this.cur_world_height = this.HOVER_DISTANCE;
+    this.speed = 0;
+    this.rotate_angle = 0;
 
     var _scope = this;
     var _animation;
