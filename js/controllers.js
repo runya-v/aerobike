@@ -44,6 +44,7 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
     var _is_down_speed = false;
 
     var _is_rotate = false;
+    var _to_route_distance = 0;
 
     var _last_position = new THREE.Vector3();
     var _direction = new THREE.Vector3();
@@ -112,14 +113,12 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
             } else {
                 bike_.speed = _mspeed;
             }
-            console.log('>' + bike_.speed);
         } else if (_is_down_speed) {
             if (0 <= (bike_.speed - bs)) {
                 bike_.speed -= bs;
             } else {
                 bike_.speed = 0;
             }
-            console.log('>' + bike_.speed);
         } else {
             if (0 <= (bike_.speed - ds)) {
                 bike_.speed -= ds;
@@ -127,8 +126,10 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
                 bike_.speed = 0;
             }
             _mspeed = 0;
-            console.log('>' + bike_.speed);
         }
+        /// Откорректировать скорость по ландшафту.
+        _to_route_distance = terrain_.getDistanceToRoute(bike_.position);
+        
         /// Получить вектор направления байка
         var bike_direction = bike_.getWorldDirection().clone();
         bike_direction.normalize();
@@ -140,10 +141,8 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
 
     function updateHeight(dt_) {
         bike_.timer += dt_;
-        /// Получить текущую позицию.
-        var pos = bike_.position;
         /// Получить высоту в позиции.
-        var height_vec = terrain_.getVertexByPos(pos);
+        var height_vec = terrain_.getVertexByPos(bike_.position);
         bike_.cur_world_height = height_vec.v.y;
         var hover = UTILS.Periodics.sinus(bike_.timer * 1000,  bike_.HOVER_FREQUENCE) * bike_.HOVER_AMPLITUDE + bike_.HOVER_DISTANCE;
         /// Плавно откорректировать высоту.
