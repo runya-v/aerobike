@@ -15,12 +15,13 @@ MODELS.BikePelican = function() {
     this.DGRAD = 5;
     this.FLOUTIN_DISTANCE_PERCENT = 0.5;
     this.MAX_SPEED = 50; ///< Метра в секунду. ~ 180 км/ч
-    this.SPEED_UP = 10; ///< Разгон до предельной скорости в секундах.
-    this.SPEED_DOWN = 100; ///< Замедление в секундах.
-    this.BREAKING = 8; ///< Торможение в секундах.
+    this.MIN_SPEED = 1; ///< Метра в секунду. ~ 3.5 км/ч
+    this.SPEED_UP = 20; ///< Разгон до предельной скорости в секундах.
+    this.SPEED_DOWN = 150; ///< Замедление в секундах.
+    this.BREAKING = 15; ///< Торможение в секундах.
     this.HOVER_DISTANCE = 1.2; ///< Высота парения над поверхностью.
-    this.HOVER_AMPLITUDE = 0.04; ///< Амплитуда парения над поверхностью.
-    this.HOVER_FREQUENCE = 1.5; ///< Периодичность парения над поверхностью.
+    this.HOVER_AMPLITUDE = 0.07; ///< Амплитуда парения над поверхностью.
+    this.HOVER_FREQUENCE = 1.0; ///< Периодичность парения над поверхностью.
     
     this.timer = 0;
     this.cur_world_height = this.HOVER_DISTANCE;
@@ -669,10 +670,11 @@ MODELS.Terrain = function(conf) {
                 generateVerges(verges_conf);
             }
         }
+        //route.reverse();
         return {
             pivot_verts: pivot_verts,
             route_map: route_map,
-            center_verts: route
+            center_verts: route 
         };
     }
 
@@ -883,7 +885,6 @@ MODELS.Terrain = function(conf) {
     // }
     // // * __________________________________________________
 
-
     // Генерация сетки тирейна
     var grid_conf = {
         conv: _conv,
@@ -988,13 +989,17 @@ MODELS.Terrain = function(conf) {
     });
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * \brief  Метод возвращает кратчайшее расстояние от переданной точки до центра трассы.
-     * \param  vec_::{x, y, z} Произвольный вектор.
-     * \return  Дистанция от точки до центра трассы. 
-     */
-    this.getDistanceToRoute = function(vec_) {
-    };
+    // function testPoint() {
+        // var darkMaterial = new THREE.MeshBasicMaterial( { color: 0xff7733 } );
+        // var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, transparent: true } );
+        // var multiMaterial = [ darkMaterial, wireframeMaterial ];
+        // var octagedron = new THREE.OctahedronGeometry(2.8, 0);
+        // var shape = THREE.SceneUtils.createMultiMaterialObject(octagedron, multiMaterial);
+        // return shape; 
+    // };
+    // var _test_pt = testPoint();
+    // _scope.add(_test_pt);
+
     
 	/**
 	 * \brief  Метод выполняет поиск ближайшей точки сетки для переданного вектора.
@@ -1002,23 +1007,34 @@ MODELS.Terrain = function(conf) {
 	 * \return  Возвращается вектор с установленной высотой для переданной позиции, нормаль и ближайшую точку от центра трассы. 
 	 */
 	this.getVertexByPos = function(vec_) {
+        function convertToPosition(v_, subw_, subh_) {
+            return { 
+                x: (v_.x - subw_), 
+                y: v_.y * _max_y_koef, 
+                z: -(v_.z - subh_) 
+            };
+        };
 		var v = {
 			x:vec_.x, y:0, z: -vec_.z
 		};
-		/// Получить смещение трассы относительно расположения тточки.
-		var sub_swidth = _conv.width() * 0.5;
+        /// Получить смещение трассы относительно расположения тточки.
+        var sub_swidth = _conv.width() * 0.5;
         var sub_sheight = _conv.height() * 0.5;
         /// Получить флаги принадлежости точки тирейну в длинну.
         var is_bz = (-sub_sheight <= vec_.z);
         var is_ez = (vec_.z <= sub_sheight);
-        var route_v = { x:0, y:0, z: 0 };
+        var route_v = new THREE.Vector3();
         if (!is_bz) {
-            /// Вернуть первую точку центра трассы.
-            route_v = _route.center_verts[0];
+            /// Вернуть последнюю точку центра трассы.
+            var rv = convertToPosition(_route.center_verts[_route.center_verts.length - 1], sub_swidth, sub_sheight);
+            route_v.x = rv.x;
+            route_v.z = rv.z;
         }
         if (!is_ez) {
-            /// Вернуть последнюю точку центра трассы.
-            route_v = _route.center_verts[_route.center_verts.length - 1];
+            /// Вернуть первую точку центра трассы.
+            var rv = convertToPosition(_route.center_verts[0], sub_swidth, sub_sheight);
+            route_v.x = rv.x;
+            route_v.z = rv.z;
         }
         var cross = new THREE.Vector3({ x:0, y:0, z:0 });
         // Проверить принадлежность точки площади трассы.
@@ -1030,20 +1046,10 @@ MODELS.Terrain = function(conf) {
 	        var p = _conv.pos(v);
 	        /// Получить ближайщую точку на центральной линии трассы.
 	        var r_pos = p.sy;
-	        if (r_pos === _route.center_verts.length - 1) {
-	            --r_pos;
-	        }
-            var r_a = _route.center_verts[r_pos];
-            var r_b = _route.center_verts[r_pos + 1];
-            /// b.norm() * a.dot(b);
-            var aroute = new THREE.Vector3(v.x - r_a.x, 0, v.z - r_a.z);
-            var broute = new THREE.Vector3(r_b.x - r_a.x, 0, r_b.z - r_a.z);
-            var rv = new THREE.Vector3();
-            var rk = aroute.dot(broute) / broute.length();
-            broute.normalize();
-            broute.multiplyScalar(rk);
-            var route_v = { x: broute.x, y: 0, z: broute.z};
-	        console.log('> ' + JSON.stringify(v) + ' -> ' + JSON.stringify(r_a) + ', ' + JSON.stringify(r_b) + ' | ' + JSON.stringify(route_v));
+	        var rv = convertToPosition(_route.center_verts[r_pos], sub_swidth, sub_sheight);
+            route_v.x = rv.x;
+            route_v.z = rv.z;
+            //console.log('> [' + r_pos + ']' + JSON.stringify(vec_) + '|' + JSON.stringify(route_v));
             /// Найти проекцию заданной точки на полигон, поиск производиться в горизонтальной плоскости XZ.
             for (var fi = p * 4; fi < p * 4 + 4; ++fi) {
                 var face = _terrain_geometry.faces[fi];
@@ -1071,8 +1077,16 @@ MODELS.Terrain = function(conf) {
             }
 	        /// Сохранить высоту.
         	v.y = _height_map[p.pos] * (_conv.widthInSegments() * MAX_Y_BY_WIDTH_PERCENT);
+            route_v.y = v.y;
         }
-        return {v:v, n:cross, r:route_v};
+        //_test_pt.position.set(route_v.x, route_v.y, route_v.z);
+        return { 
+            v:v, 
+            n:cross, 
+            r:route_v, 
+            rwidth: conf.route_width,
+            d2r: route_v.distanceTo({ x: vec_.x, y: route_v.y, z: vec_.z })  
+        };
 	};
 
     /// Методы "гетеры"
