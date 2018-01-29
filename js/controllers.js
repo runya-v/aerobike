@@ -48,6 +48,7 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
 
     var _last_position = new THREE.Vector3();
     var _direction = new THREE.Vector3();
+    var _vertex_by_pos = terrain_.getVertexByPos(bike_.position);
 
     function updateRotation(dt_) {
         if (_is_rotate) {
@@ -96,9 +97,11 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
         }
     }
 
+
     function updateSpeed(dt_) {
         /// Получить максиамльную скорость для промежутка времени с приведением к секунде.
         var max_speed = bike_.MAX_SPEED * dt_ * 1000;
+        var min_speed = bike_.MIN_SPEED * dt_ * 1000;
         /// Коррекция максимальной скорости на промежутке времени.
         if (_mspeed < max_speed) {
             _mspeed = max_speed;   
@@ -127,29 +130,40 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
             }
             _mspeed = 0;
         }
-        /// Откорректировать скорость по ландшафту.
-        _to_route_distance = terrain_.getDistanceToRoute(bike_.position);
-        
-        /// Получить вектор направления байка
-        var bike_direction = bike_.getWorldDirection().clone();
-        bike_direction.normalize();
-        bike_direction.multiplyScalar(bike_.speed);
-        /// Сместить байк на значение скорости
-        bike_.position.x += bike_direction.x;
-        bike_.position.z += bike_direction.z;
+        /// Оработать процесс перемещения.
+        if (0 < bike_.speed) {
+            /// Получить вектор направления байка
+            var bike_direction = bike_.getWorldDirection().clone();
+            bike_direction.normalize();
+            bike_direction.multiplyScalar(bike_.speed);
+            /// Плавно откорректировать позицию.
+            var bike_new_pos = bike_.position.clone(); 
+            bike_new_pos.x += bike_direction.x;
+            bike_new_pos.z += bike_direction.z;
+            _vertex_by_pos = terrain_.getVertexByPos(bike_new_pos);
+            var epos = 1 - UTILS.Easing.inQuint(_vertex_by_pos.d2r / _vertex_by_pos.rwidth);
+            bike_.speed *= epos;
+            if (bike_.speed < min_speed) {
+                bike_.speed = min_speed;
+            }
+            bike_direction.normalize();
+            bike_direction.multiplyScalar(bike_.speed);
+            /// Сместить байк на значение скорости
+            bike_.position.x += bike_direction.x;
+            bike_.position.z += bike_direction.z;
+        }
     }
 
-    function updateHeight(dt_) {
+    function updateHeighAndtPosition(dt_) {
         bike_.timer += dt_;
         /// Получить высоту в позиции.
-        var height_vec = terrain_.getVertexByPos(bike_.position);
-        bike_.cur_world_height = height_vec.v.y;
-        var hover = UTILS.Periodics.sinus(bike_.timer * 1000,  bike_.HOVER_FREQUENCE) * bike_.HOVER_AMPLITUDE + bike_.HOVER_DISTANCE;
+        bike_.cur_world_height = _vertex_by_pos.v.y;
         /// Плавно откорректировать высоту.
-        if (0 <= height_vec.v.y) {
-            bike_.position.y = bike_.cur_world_height + hover;
+        var ehover = UTILS.Periodics.sinus(bike_.timer * 1000,  bike_.HOVER_FREQUENCE) * bike_.HOVER_AMPLITUDE + bike_.HOVER_DISTANCE;
+        if (0 <= _vertex_by_pos.v.y) {
+            bike_.position.y = bike_.cur_world_height + ehover;
         } else {
-            bike_.position.y = hover;
+            bike_.position.y = ehover;
         }
     } 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -162,7 +176,7 @@ CONTROLLERS.BikeController = function(bike_, terrain_, dom_element_) {
             /// Обновить направление байка.
             updateRotation(_middle_dt);
             /// Обновить положение байка над поверхностью.
-            updateHeight(_middle_dt);
+            updateHeighAndtPosition(_middle_dt);
         };
     };
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
